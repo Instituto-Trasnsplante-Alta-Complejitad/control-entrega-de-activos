@@ -2,20 +2,27 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
+    console.log('[INIT] Iniciando proceso de envío de email...');
+    
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
+    console.log('[AUTH] Usuario autenticado:', user?.email);
     if (!user) {
       return Response.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     const { deliveryId } = await req.json();
+    console.log('[PAYLOAD] deliveryId recibido:', deliveryId);
     if (!deliveryId) {
       return Response.json({ error: 'Falta deliveryId' }, { status: 400 });
     }
 
+    console.log('[DB] Buscando entrega con ID:', deliveryId);
     const deliveries = await base44.asServiceRole.entities.Delivery.filter({ id: deliveryId });
     const delivery = deliveries[0];
+    console.log('[DB] Entrega encontrada:', { recipient_email: delivery?.recipient_email, recipient_name: delivery?.recipient_name });
     if (!delivery) {
+      console.error('[ERROR] Entrega no encontrada para ID:', deliveryId);
       return Response.json({ error: 'Entrega no encontrada' }, { status: 404 });
     }
 
@@ -101,9 +108,23 @@ Deno.serve(async (req) => {
 </html>`;
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    console.log('[CONFIG] Verificando RESEND_API_KEY...');
     if (!resendApiKey) {
+      console.error('[ERROR] RESEND_API_KEY no configurado');
       throw new Error('RESEND_API_KEY no configurado');
     }
+    console.log('[CONFIG] RESEND_API_KEY encontrado');
+    
+    const emailPayload = {
+      from: 'noreply@nephrology.com',
+      to: delivery.recipient_email,
+      subject: `Entrega de equipo - ${delivery.equipment_brand} ${delivery.equipment_model}`,
+      html: emailBody,
+      reply_to: 'it@nephrology.com',
+    };
+    
+    console.log('[RESEND] Enviando email a:', delivery.recipient_email);
+    console.log('[RESEND] Payload preparado, tamaño:', JSON.stringify(emailPayload).length, 'bytes');
     
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -111,25 +132,38 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: 'noreply@nephrology.com',
-        to: delivery.recipient_email,
-        subject: `Entrega de equipo - ${delivery.equipment_brand} ${delivery.equipment_model}`,
-        html: emailBody,
-        reply_to: 'it@nephrology.com',
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
+    console.log('[RESEND] Respuesta HTTP:', emailResponse.status, emailResponse.statusText);
+    
     const responseData = await emailResponse.json();
+    console.log('[RESEND] Respuesta JSON:', JSON.stringify(responseData).substring(0, 500));
     
     if (!emailResponse.ok) {
-      console.error('Resend API error:', responseData);
-      throw new Error(`Error enviando email: ${responseData.message || emailResponse.statusText}`);
+      console.error('[ERROR] Resend API falló:', {
+        status: emailResponse.status,
+        statusText: emailResponse.statusText,
+        error: responseData.message || responseData.error,
+        details: responseData
+      });
+      throw new Error(`Error enviando email: ${responseData.message || responseData.error || emailResponse.statusText}`);
     }
 
-    console.log('Email enviado exitosamente:', responseData.id);
+    console.log('[SUCCESS] Email enviado exitosamente. ID:', responseData.id);
     return Response.json({ success: true, message: 'Email enviado', emailId: responseData.id });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[FATAL]', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    return Response.json({ 
+      error: error.message,
+      details: {
+        stage: 'email_delivery',
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
   }
 });
