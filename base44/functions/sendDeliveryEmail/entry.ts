@@ -101,6 +101,9 @@ Deno.serve(async (req) => {
 </html>`;
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      throw new Error('RESEND_API_KEY no configurado');
+    }
     
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -109,18 +112,23 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'NEPHROLOGY S.A. - IT <noreply@nephrology.com>',
+        from: 'noreply@nephrology.com',
         to: delivery.recipient_email,
         subject: `Entrega de equipo - ${delivery.equipment_brand} ${delivery.equipment_model}`,
         html: emailBody,
+        reply_to: 'it@nephrology.com',
       }),
     });
 
+    const responseData = await emailResponse.json();
+    
     if (!emailResponse.ok) {
-      throw new Error(`Error enviando email: ${emailResponse.statusText}`);
+      console.error('Resend API error:', responseData);
+      throw new Error(`Error enviando email: ${responseData.message || emailResponse.statusText}`);
     }
 
-    return Response.json({ success: true, message: 'Email enviado' });
+    console.log('Email enviado exitosamente:', responseData.id);
+    return Response.json({ success: true, message: 'Email enviado', emailId: responseData.id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
