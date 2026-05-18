@@ -1,0 +1,85 @@
+{
+  "name": "Delivery",
+  "type": "object",
+  "properties": {
+    "equipment_id": {
+      "type": "string",
+      "description": "ID del equipo entregado"
+    },
+    "recipient_name": {
+      "type": "string",
+      "description": "Nombre completo del destinatario"
+    },
+    "recipient_email": {
+      "type": "string",
+      "description": "Email del destinatario"
+    },
+    "recipient_dni": {
+      "type": "string",
+      "description": "DNI del destinatario"
+    },
+    "recipient_address": {
+      "type": "string",
+      "description": "Domicilio del destinatario"
+    },
+    "recipient_city": {
+      "type": "string",
+      "description": "Ciudad del destinatario"
+    },
+    "department": {
+      "type": "string",
+      "description": "Gerencia/Sector"
+    },
+    "delivery_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de entrega"
+    },
+    "equipment_type": {
+      "type": "string",
+      "description": "Tipo de equipo"
+    },
+    "equipment_brand": {
+      "type": "string",
+      "description": "Marca del equipo"
+    },
+    "equipment_model": {
+      "type": "string",
+      "description": "Modelo del equipo"
+    },
+    "equipment_serial": {
+      "type": "string",
+      "description": "N\u00famero de serie del equipo"
+    },
+    "equipment_asset": {
+      "type": "string",
+      "description": "N\u00famero de activo del equipo"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendiente",
+        "aceptado",
+        "rechazado",
+        "devuelto"
+      ],
+      "default": "pendiente",
+      "description": "Estado de la entrega"
+    },
+    "acceptance_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha y hora de aceptaci\u00f3n"
+    },
+    "acceptance_token": {
+      "type": "string",
+      "description": "Token \u00fanico para aceptaci\u00f3n"
+    }
+  },
+  "required": [
+    "equipment_id",
+    "recipient_name",
+    "recipient_email",
+    "delivery_date"
+  ]
+}

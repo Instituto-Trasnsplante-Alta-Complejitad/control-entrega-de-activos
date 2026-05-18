@@ -1,0 +1,149 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search } from "lucide-react";
+import EquipmentTable from "@/components/stock/EquipmentTable";
+import EquipmentForm from "@/components/stock/EquipmentForm";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+export default function Stock() {
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const queryClient = useQueryClient();
+
+  const { data: equipment = [], isLoading } = useQuery({
+    queryKey: ["equipment"],
+    queryFn: () => base44.entities.Equipment.list("-created_date", 500),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Equipment.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["equipment"] });
+      setShowForm(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Equipment.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["equipment"] });
+      setShowForm(false);
+      setEditing(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Equipment.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["equipment"] });
+      setDeleting(null);
+    },
+  });
+
+  const handleSubmit = (formData) => {
+    if (editing) {
+      updateMutation.mutate({ id: editing.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const filtered = equipment.filter((item) => {
+    const matchSearch = !search || 
+      item.asset_number?.toLowerCase().includes(search.toLowerCase()) ||
+      item.brand?.toLowerCase().includes(search.toLowerCase()) ||
+      item.model?.toLowerCase().includes(search.toLowerCase()) ||
+      item.serial_number?.toLowerCase().includes(search.toLowerCase()) ||
+      item.department?.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === "all" || item.type === typeFilter;
+    const matchStatus = statusFilter === "all" || item.status === statusFilter;
+    return matchSearch && matchType && matchStatus;
+  });
+
+  return (
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Stock de Equipos</h1>
+          <p className="text-sm text-muted-foreground mt-1">{equipment.length} equipos registrados</p>
+        </div>
+        <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 self-start">
+          <Plus className="w-4 h-4" /> Nuevo Equipo
+        </Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Buscar por activo, marca, modelo, serie..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los tipos</SelectItem>
+            <SelectItem value="notebook">Notebook</SelectItem>
+            <SelectItem value="tablet">Tablet</SelectItem>
+            <SelectItem value="celular">Celular</SelectItem>
+            <SelectItem value="cpu">CPU</SelectItem>
+            <SelectItem value="otro">Otro</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Estado" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="disponible">Disponible</SelectItem>
+            <SelectItem value="asignado">Asignado</SelectItem>
+            <SelectItem value="baja">Baja</SelectItem>
+            <SelectItem value="en_reparacion">En reparación</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+        </div>
+      ) : (
+        <EquipmentTable
+          equipment={filtered}
+          onEdit={(item) => { setEditing(item); setShowForm(true); }}
+          onDelete={(item) => setDeleting(item)}
+        />
+      )}
+
+      <EquipmentForm
+        open={showForm}
+        onClose={() => { setShowForm(false); setEditing(null); }}
+        onSubmit={handleSubmit}
+        equipment={editing}
+      />
+
+      <AlertDialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará {deleting?.brand} {deleting?.model} ({deleting?.asset_number}). Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteMutation.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
