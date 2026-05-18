@@ -29,6 +29,7 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
     model: "",
     serial_number: "",
     status: "disponible",
+    assigned_to: "",
     department: "",
     comments: "",
   });
@@ -42,11 +43,12 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
         model: equipment.model || "",
         serial_number: equipment.serial_number || "",
         status: equipment.status || "disponible",
+        assigned_to: equipment.assigned_to || "",
         department: equipment.department || "",
         comments: equipment.comments || "",
       });
     } else {
-      setForm({ asset_number: "", type: "notebook", brand: "", model: "", serial_number: "", status: "disponible", department: "", comments: "" });
+      setForm({ asset_number: "", type: "notebook", brand: "", model: "", serial_number: "", status: "disponible", assigned_to: "", department: "", comments: "" });
     }
   }, [equipment, open]);
 
@@ -101,6 +103,10 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Usuario asignado</Label>
+            <Input value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} placeholder="Nombre del empleado" />
           </div>
           <div className="space-y-2">
             <Label>Sector / Gerencia</Label>

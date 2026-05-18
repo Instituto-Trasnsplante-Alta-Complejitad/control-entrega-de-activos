@@ -29,6 +29,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
             <TableHead className="font-semibold">Marca</TableHead>
             <TableHead className="font-semibold">Modelo</TableHead>
             <TableHead className="font-semibold hidden md:table-cell">N° Serie</TableHead>
+            <TableHead className="font-semibold hidden lg:table-cell">Usuario</TableHead>
             <TableHead className="font-semibold hidden lg:table-cell">Sector</TableHead>
             <TableHead className="font-semibold">Estado</TableHead>
             <TableHead className="font-semibold text-right">Acciones</TableHead>
@@ -44,6 +45,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
                 <TableCell className="font-medium">{item.brand}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{item.model}</TableCell>
                 <TableCell className="hidden md:table-cell font-mono text-xs">{item.serial_number}</TableCell>
+                <TableCell className="hidden lg:table-cell text-sm">{item.assigned_to || "—"}</TableCell>
                 <TableCell className="hidden lg:table-cell text-sm">{item.department || "—"}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className={status.className}>
@@ -65,7 +67,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
           })}
           {equipment.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+              <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                 No hay equipos registrados
               </TableCell>
             </TableRow>
