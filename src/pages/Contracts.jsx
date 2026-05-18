@@ -3,21 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Search, Download } from "lucide-react";
-
-const statusMap = {
-  pendiente: { label: "Pendiente", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  aceptado: { label: "Aceptado", className: "bg-green-100 text-green-700 border-green-200" },
-  rechazado: { label: "Rechazado", className: "bg-red-100 text-red-700 border-red-200" },
-  devuelto: { label: "Devuelto", className: "bg-gray-100 text-gray-700 border-gray-200" },
-};
 
 export default function Contracts() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [downloading, setDownloading] = useState(null);
 
   const { data: deliveries = [] } = useQuery({
@@ -30,8 +20,7 @@ export default function Contracts() {
       item.recipient_name?.toLowerCase().includes(search.toLowerCase()) ||
       item.equipment_asset?.toLowerCase().includes(search.toLowerCase()) ||
       item.equipment_model?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchSearch && matchStatus;
+    return matchSearch;
   });
 
   const handleDownload = async (deliveryId, recipientName) => {
@@ -77,16 +66,6 @@ export default function Contracts() {
             className="pl-9" 
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Estado" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="pendiente">Pendiente</SelectItem>
-            <SelectItem value="aceptado">Aceptado</SelectItem>
-            <SelectItem value="rechazado">Rechazado</SelectItem>
-            <SelectItem value="devuelto">Devuelto</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -96,14 +75,11 @@ export default function Contracts() {
               <TableHead className="font-semibold">Empleado</TableHead>
               <TableHead className="font-semibold hidden md:table-cell">Equipo</TableHead>
               <TableHead className="font-semibold hidden lg:table-cell">Fecha Entrega</TableHead>
-              <TableHead className="font-semibold">Estado</TableHead>
               <TableHead className="font-semibold text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((delivery) => {
-              const status = statusMap[delivery.status] || statusMap.pendiente;
-              return (
+            {filtered.map((delivery) => (
                 <TableRow key={delivery.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell className="font-medium">{delivery.recipient_name}</TableCell>
                   <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
@@ -111,11 +87,6 @@ export default function Contracts() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-sm">
                     {new Date(delivery.delivery_date).toLocaleDateString('es-AR')}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={status.className}>
-                      {status.label}
-                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button 
@@ -130,11 +101,10 @@ export default function Contracts() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              );
-            })}
+              ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                   No hay contratos
                 </TableCell>
               </TableRow>
