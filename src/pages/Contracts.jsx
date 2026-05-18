@@ -109,7 +109,7 @@ export default function Contracts() {
               <TableHead className="font-semibold hidden md:table-cell">Equipo</TableHead>
               <TableHead className="font-semibold hidden lg:table-cell">Fecha Entrega</TableHead>
               <TableHead className="font-semibold">Estado</TableHead>
-              <TableHead className="font-semibold text-right">Descargar</TableHead>
+              <TableHead className="font-semibold text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -129,15 +129,26 @@ export default function Contracts() {
                       {status.label}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right flex justify-end gap-2">
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8"
                       onClick={() => handleDownload(delivery.id, delivery.recipient_name)}
                       disabled={downloading === delivery.id}
+                      title="Descargar PDF"
                     >
                       <Download className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => handleResendEmail(delivery.id, delivery.recipient_email, delivery.recipient_name)}
+                      disabled={sending === delivery.id}
+                      title="Reenviar por email"
+                    >
+                      <Mail className="w-4 h-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
