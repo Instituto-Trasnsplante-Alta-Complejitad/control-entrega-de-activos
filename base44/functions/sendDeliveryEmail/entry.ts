@@ -100,12 +100,16 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
+    const emailResult = await base44.asServiceRole.integrations.Core.SendEmail({
       to: delivery.recipient_email,
       subject: `Entrega de equipo - ${delivery.equipment_brand} ${delivery.equipment_model}`,
       body: emailBody,
       from_name: 'NEPHROLOGY S.A. - IT'
     });
+
+    if (!emailResult || emailResult.error) {
+      throw new Error(emailResult?.error || 'Error al enviar el email');
+    }
 
     return Response.json({ success: true, message: 'Email enviado' });
   } catch (error) {
