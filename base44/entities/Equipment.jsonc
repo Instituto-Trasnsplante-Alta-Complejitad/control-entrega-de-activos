@@ -40,6 +40,10 @@
       "default": "disponible",
       "description": "Estado del equipo"
     },
+    "assigned_to": {
+      "type": "string",
+      "description": "Nombre del usuario asignado"
+    },
     "department": {
       "type": "string",
       "description": "Gerencia o sector"
