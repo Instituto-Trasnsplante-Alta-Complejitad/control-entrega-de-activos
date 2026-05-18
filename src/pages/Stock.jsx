@@ -16,6 +16,8 @@ export default function Stock() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [userSearch, setUserSearch] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -66,47 +68,68 @@ export default function Stock() {
       item.department?.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || item.type === typeFilter;
     const matchStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchSearch && matchType && matchStatus;
+    const matchDepartment = departmentFilter === "all" || item.department === departmentFilter;
+    const matchUser = !userSearch ||
+      item.assigned_to?.toLowerCase().includes(userSearch.toLowerCase()) ||
+      item.username?.toLowerCase().includes(userSearch.toLowerCase());
+    return matchSearch && matchType && matchStatus && matchDepartment && matchUser;
   });
+
+  const departments = [...new Set(equipment.map((e) => e.department).filter(Boolean))].sort();
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Stock de Equipos</h1>
-          <p className="text-sm text-muted-foreground mt-1">{equipment.length} equipos registrados</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} de {equipment.length} equipos</p>
         </div>
         <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 self-start">
           <Plus className="w-4 h-4" /> Nuevo Equipo
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Buscar por activo, marca, modelo, serie..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Buscar por activo, marca, modelo, serie..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <div className="relative w-full sm:w-52">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Buscar usuario..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className="pl-9" />
+          </div>
         </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Tipo" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los tipos</SelectItem>
-            <SelectItem value="notebook">Notebook</SelectItem>
-            <SelectItem value="tablet">Tablet</SelectItem>
-            <SelectItem value="celular">Celular</SelectItem>
-            <SelectItem value="cpu">CPU</SelectItem>
-            <SelectItem value="otro">Otro</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Estado" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="disponible">Disponible</SelectItem>
-            <SelectItem value="asignado">Asignado</SelectItem>
-            <SelectItem value="baja">Baja</SelectItem>
-            <SelectItem value="en_reparacion">En reparación</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los tipos</SelectItem>
+              <SelectItem value="notebook">Notebook</SelectItem>
+              <SelectItem value="tablet">Tablet</SelectItem>
+              <SelectItem value="celular">Celular</SelectItem>
+              <SelectItem value="cpu">CPU</SelectItem>
+              <SelectItem value="otro">Otro</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Estado" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="disponible">Disponible</SelectItem>
+              <SelectItem value="asignado">Asignado</SelectItem>
+              <SelectItem value="baja">Baja</SelectItem>
+              <SelectItem value="en_reparacion">En reparación</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Ubicación" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las ubicaciones</SelectItem>
+              {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
