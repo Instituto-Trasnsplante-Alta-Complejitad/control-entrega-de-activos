@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, ClipboardList, LogOut } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, ClipboardList, FileText, LogOut } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { label: "Stock de Equipos", path: "/stock", icon: Monitor },
   { label: "Nueva Entrega", path: "/nueva-entrega", icon: PackagePlus },
   { label: "Historial", path: "/historial", icon: ClipboardList },
+  { label: "Contratos", path: "/contratos", icon: FileText },
 ];
 
 export default function Sidebar() {
