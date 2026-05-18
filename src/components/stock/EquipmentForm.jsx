@@ -30,7 +30,9 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
     serial_number: "",
     status: "disponible",
     assigned_to: "",
+    username: "",
     department: "",
+    delivery_date: "",
     comments: "",
   });
 
@@ -44,11 +46,13 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
         serial_number: equipment.serial_number || "",
         status: equipment.status || "disponible",
         assigned_to: equipment.assigned_to || "",
+        username: equipment.username || "",
         department: equipment.department || "",
+        delivery_date: equipment.delivery_date || "",
         comments: equipment.comments || "",
       });
     } else {
-      setForm({ asset_number: "", type: "notebook", brand: "", model: "", serial_number: "", status: "disponible", assigned_to: "", department: "", comments: "" });
+      setForm({ asset_number: "", type: "notebook", brand: "", model: "", serial_number: "", status: "disponible", assigned_to: "", username: "", department: "", delivery_date: "", comments: "" });
     }
   }, [equipment, open]);
 
@@ -104,13 +108,25 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
               </Select>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Asignado a</Label>
-            <Input value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} placeholder="Nombre del usuario" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Apellido y Nombre</Label>
+              <Input value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} placeholder="Ej: García Juan" />
+            </div>
+            <div className="space-y-2">
+              <Label>Usuario</Label>
+              <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="Ej: jgarnph" />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Sector / Gerencia</Label>
-            <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Ubicación / Sector</Label>
+              <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha de entrega</Label>
+              <Input type="date" value={form.delivery_date} onChange={(e) => setForm({ ...form, delivery_date: e.target.value })} />
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Comentarios</Label>

@@ -4,7 +4,7 @@
   "properties": {
     "asset_number": {
       "type": "string",
-      "description": "N\u00famero de activo (ej: AR2150L002)"
+      "description": "C\u00f3digo de equipo (ej: AR2150L002)"
     },
     "type": {
       "type": "string",
@@ -42,15 +42,24 @@
     },
     "assigned_to": {
       "type": "string",
-      "description": "Nombre del usuario asignado"
+      "description": "Apellido y Nombre del usuario asignado"
+    },
+    "username": {
+      "type": "string",
+      "description": "Usuario de red (ej: glalnph)"
     },
     "department": {
       "type": "string",
-      "description": "Gerencia o sector"
+      "description": "Ubicaci\u00f3n / Sector"
+    },
+    "delivery_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de entrega"
     },
     "comments": {
       "type": "string",
-      "description": "Comentarios adicionales"
+      "description": "Observaciones"
     }
   },
   "required": [
