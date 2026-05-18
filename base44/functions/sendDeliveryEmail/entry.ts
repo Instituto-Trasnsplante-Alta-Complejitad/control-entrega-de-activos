@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     console.log('[CONFIG] RESEND_API_KEY encontrado');
     
     const emailPayload = {
-      from: 'noreply@nephrology.com',
+      from: 'onboarding@resend.dev',
       to: delivery.recipient_email,
       subject: `Entrega de equipo - ${delivery.equipment_brand} ${delivery.equipment_model}`,
       html: emailBody,
