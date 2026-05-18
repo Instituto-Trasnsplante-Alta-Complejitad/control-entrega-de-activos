@@ -60,15 +60,11 @@ export default function Contracts() {
   const handleResendEmail = async (deliveryId, recipientEmail, recipientName) => {
     try {
       setSending(deliveryId);
-      const response = await base44.functions.invoke('sendDeliveryEmail', { deliveryId });
-      if (response.data?.requiresInvite) {
-        alert('El usuario debe estar registrado en la app primero. Por favor invítalo desde el dashboard.');
-      } else {
-        alert('Contrato reenviado por email');
-      }
+      await base44.functions.invoke('sendDeliveryEmail', { deliveryId });
+      alert('Contrato reenviado por email');
     } catch (error) {
       console.error('Error reenviando contrato:', error);
-      alert('Error al reenviar el contrato: ' + (error.response?.data?.error || error.message));
+      alert('Error al reenviar el contrato');
     } finally {
       setSending(null);
     }

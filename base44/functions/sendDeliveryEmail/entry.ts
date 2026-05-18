@@ -100,25 +100,24 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    try {
-      await base44.integrations.Core.SendEmail({
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'NEPHROLOGY S.A. - IT <noreply@nephrology.com>',
         to: delivery.recipient_email,
         subject: `Entrega de equipo - ${delivery.equipment_brand} ${delivery.equipment_model}`,
-        body: emailBody,
-        from_name: 'NEPHROLOGY S.A. - IT'
-      });
-    } catch (emailError) {
-      console.log('SendEmail error:', emailError.message);
-      // Si falla SendEmail, intentar con las invitaciones del sistema
-      if (emailError.message && emailError.message.includes('Cannot send emails to users outside the app')) {
-        // El usuario no está registrado en la app, devolver mensaje informativo
-        return Response.json({ 
-          success: true, 
-          message: 'El usuario debe estar registrado en la app para recibir el email. Por favor invítalo primero.',
-          requiresInvite: true 
-        });
-      }
-      throw emailError;
+        html: emailBody,
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      throw new Error(`Error enviando email: ${emailResponse.statusText}`);
     }
 
     return Response.json({ success: true, message: 'Email enviado' });
