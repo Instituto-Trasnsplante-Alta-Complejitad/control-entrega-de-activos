@@ -1,11 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, ClipboardList, FileText } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, FileText } from "lucide-react";
 
 const navItems = [
   { label: "Inicio", path: "/", icon: LayoutDashboard },
   { label: "Stock", path: "/stock", icon: Monitor },
   { label: "Entregar", path: "/nueva-entrega", icon: PackagePlus },
-  { label: "Historial", path: "/historial", icon: ClipboardList },
   { label: "Contratos", path: "/contratos", icon: FileText },
 ];
 

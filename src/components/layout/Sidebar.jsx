@@ -6,7 +6,6 @@ const navItems = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
   { label: "Stock de Equipos", path: "/stock", icon: Monitor },
   { label: "Nueva Entrega", path: "/nueva-entrega", icon: PackagePlus },
-  { label: "Historial", path: "/historial", icon: ClipboardList },
   { label: "Contratos", path: "/contratos", icon: FileText },
 ];
 

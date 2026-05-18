@@ -50,7 +50,6 @@ export default function DeliveryHistory() {
           <SelectTrigger className="w-44"><SelectValue placeholder="Estado" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="pendiente">Pendiente</SelectItem>
             <SelectItem value="aceptado">Aceptado</SelectItem>
             <SelectItem value="rechazado">Rechazado</SelectItem>
             <SelectItem value="devuelto">Devuelto</SelectItem>

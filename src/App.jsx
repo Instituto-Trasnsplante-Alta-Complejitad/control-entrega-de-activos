@@ -14,7 +14,6 @@ import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import Stock from '@/pages/Stock';
 import NewDelivery from '@/pages/NewDelivery';
-import DeliveryHistory from '@/pages/DeliveryHistory';
 import AcceptDelivery from '@/pages/AcceptDelivery';
 import Contracts from '@/pages/Contracts';
 
@@ -50,7 +49,6 @@ const AuthenticatedApp = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/stock" element={<Stock />} />
           <Route path="/nueva-entrega" element={<NewDelivery />} />
-          <Route path="/historial" element={<DeliveryHistory />} />
           <Route path="/contratos" element={<Contracts />} />
         </Route>
       </Route>
