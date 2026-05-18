@@ -26,18 +26,19 @@ Deno.serve(async (req) => {
     const pageHeight = doc.internal.pageSize.getHeight();
     let yPos = 15;
 
-    doc.setFont('Helvetica', 'normal');
+    // Usar fuente que soporte UTF-8
+    doc.setFont('Times', 'normal');
     doc.setFontSize(10);
     doc.text(`Buenos Aires, ${new Date().toLocaleDateString('es-AR')}`, 15, yPos);
 
     yPos += 12;
     doc.setFontSize(14);
-    doc.setFont('Helvetica', 'bold');
+    doc.setFont('Times', 'bold');
     doc.text('NORMATIVA CORPORATIVA DE PORTÁTILES', 15, yPos);
 
     yPos += 10;
     doc.setFontSize(10);
-    doc.setFont('Helvetica', 'normal');
+    doc.setFont('Times', 'normal');
 
     const paragraphs = [
       `Entre NEPHROLOGY S.A., domiciliada en Austria 2008, CP1425, de la Ciudad Autónoma de Buenos Aires, representada en este acto por la Sra. Gomez Coll Julieta María, DNI 36.194.528 en su carácter de apoderada (en adelante, la "Compañía") por una parte, y por la otra parte, el Sr/a. ${delivery.recipient_name || '___________________________'}, DNI ${delivery.recipient_dni || '__________________'}, con domicilio real en ${delivery.recipient_address || '___________________________'}, ${delivery.recipient_city || '__________________________'} de Buenos Aires (en adelante, la "Empleada"), se acuerda celebrar el presente convenio, sujeto a las siguientes cláusulas y condiciones:`,
