@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download } from "lucide-react";
+import { Search, Download, Mail } from "lucide-react";
 
 const statusMap = {
   pendiente: { label: "Pendiente", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -19,6 +19,7 @@ export default function Contracts() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [downloading, setDownloading] = useState(null);
+  const [sending, setSending] = useState(null);
 
   const { data: deliveries = [] } = useQuery({
     queryKey: ["deliveries"],
@@ -53,6 +54,19 @@ export default function Contracts() {
       alert('Error al descargar el contrato');
     } finally {
       setDownloading(null);
+    }
+  };
+
+  const handleResendEmail = async (deliveryId, recipientEmail, recipientName) => {
+    try {
+      setSending(deliveryId);
+      await base44.functions.invoke('sendDeliveryEmail', { deliveryId });
+      alert('Contrato reenviado por email');
+    } catch (error) {
+      console.error('Error reenviando contrato:', error);
+      alert('Error al reenviar el contrato');
+    } finally {
+      setSending(null);
     }
   };
 
