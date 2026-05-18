@@ -105,8 +105,8 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Usuario asignado</Label>
-            <Input value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} placeholder="Nombre del empleado" />
+            <Label>Asignado a</Label>
+            <Input value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} placeholder="Nombre del usuario" />
           </div>
           <div className="space-y-2">
             <Label>Sector / Gerencia</Label>
