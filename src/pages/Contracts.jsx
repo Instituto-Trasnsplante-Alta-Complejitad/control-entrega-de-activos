@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Mail } from "lucide-react";
+import { Search, Download } from "lucide-react";
 
 const statusMap = {
   pendiente: { label: "Pendiente", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -19,7 +19,6 @@ export default function Contracts() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [downloading, setDownloading] = useState(null);
-  const [sending, setSending] = useState(null);
 
   const { data: deliveries = [] } = useQuery({
     queryKey: ["deliveries"],
@@ -57,18 +56,7 @@ export default function Contracts() {
     }
   };
 
-  const handleResendEmail = async (deliveryId, recipientEmail, recipientName) => {
-    try {
-      setSending(deliveryId);
-      await base44.functions.invoke('sendDeliveryEmail', { deliveryId });
-      alert('Contrato reenviado por email');
-    } catch (error) {
-      console.error('Error reenviando contrato:', error);
-      alert('Error al reenviar el contrato');
-    } finally {
-      setSending(null);
-    }
-  };
+
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -129,7 +117,7 @@ export default function Contracts() {
                       {status.label}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right flex justify-end gap-2">
+                  <TableCell className="text-right">
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -139,16 +127,6 @@ export default function Contracts() {
                       title="Descargar PDF"
                     >
                       <Download className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => handleResendEmail(delivery.id, delivery.recipient_email, delivery.recipient_name)}
-                      disabled={sending === delivery.id}
-                      title="Reenviar por email"
-                    >
-                      <Mail className="w-4 h-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
