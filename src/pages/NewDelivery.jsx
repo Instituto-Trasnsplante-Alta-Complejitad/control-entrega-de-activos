@@ -7,14 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Send, Loader2 } from "lucide-react";
+import { Send } from "lucide-react";
 import { format } from "date-fns";
 
 export default function NewDelivery() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
-  const [sending, setSending] = useState(false);
 
   const [form, setForm] = useState({
     recipient_name: "",
@@ -41,8 +40,6 @@ export default function NewDelivery() {
       return;
     }
 
-    setSending(true);
-
     const token = crypto.randomUUID();
     const deliveryData = {
       ...form,
@@ -59,15 +56,10 @@ export default function NewDelivery() {
     const delivery = await base44.entities.Delivery.create(deliveryData);
     await base44.entities.Equipment.update(selectedEquipmentId, { status: "asignado", department: form.department });
 
-    const response = await base44.functions.invoke("sendDeliveryEmail", {
-      deliveryId: delivery.id,
-    });
-
     queryClient.invalidateQueries({ queryKey: ["equipment"] });
     queryClient.invalidateQueries({ queryKey: ["deliveries"] });
-    setSending(false);
 
-    toast({ title: "Entrega registrada", description: "Se envió el email con el contrato a " + form.recipient_email });
+    toast({ title: "Entrega registrada", description: "La entrega se registró correctamente" });
 
     setForm({
       recipient_name: "",
@@ -85,7 +77,7 @@ export default function NewDelivery() {
     <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Nueva Entrega</h1>
-        <p className="text-sm text-muted-foreground mt-1">Registrá la entrega y enviá el contrato por email</p>
+        <p className="text-sm text-muted-foreground mt-1">Registrá la entrega del equipo</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -159,9 +151,9 @@ export default function NewDelivery() {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full gap-2" size="lg" disabled={sending}>
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          {sending ? "Enviando..." : "Registrar Entrega y Enviar Contrato"}
+        <Button type="submit" className="w-full gap-2" size="lg">
+          <Send className="w-4 h-4" />
+          Registrar Entrega
         </Button>
       </form>
     </div>
