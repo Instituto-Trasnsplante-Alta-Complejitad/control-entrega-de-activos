@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import PizZip from 'npm:pizzip@3.2.0';
-import Docxtemplater from 'npm:docxtemplater@3.68.7';
 import { jsPDF } from 'npm:jspdf@4.2.1';
 
 const TEMPLATE_URL = 'https://media.base44.com/files/public/6a0b41b518760c50f55478db/0e11d6dd2_Plantilla_Base44_Notebook_Placeholders.docx';
@@ -9,6 +8,64 @@ function formatDate(dateStr) {
   if (!dateStr) return new Date().toLocaleDateString('es-AR');
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// Escape special regex chars
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Replace all {{key}} placeholders in the XML, handling cases where
+// Word may split {{key}} across multiple <w:t> runs.
+function fillDocxXml(xml, data) {
+  // First, try simple direct replacement (tags in single w:t)
+  let result = xml;
+  for (const [key, value] of Object.entries(data)) {
+    const safe = String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    result = result.split(`{{${key}}}`).join(safe);
+  }
+
+  // Second pass: handle split tags across runs within same paragraph
+  // Strategy: for each <w:p>...</w:p>, merge all <w:t> text, replace placeholders,
+  // then put the merged text into the first <w:t> and clear the rest.
+  result = result.replace(/(<w:p[ >][\s\S]*?<\/w:p>)/g, (para) => {
+    // Extract all w:t contents
+    const tContents = [];
+    para.replace(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g, (_, open, content, close) => {
+      tContents.push(content);
+    });
+    const merged = tContents.join('');
+    // Check if any placeholder exists in the merged text
+    let hasPlaceholder = false;
+    for (const key of Object.keys(data)) {
+      if (merged.includes(`{{${key}}}`)) { hasPlaceholder = true; break; }
+    }
+    if (!hasPlaceholder) return para;
+
+    // Replace placeholders in merged text
+    let replaced = merged;
+    for (const [key, value] of Object.entries(data)) {
+      const safe = String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      replaced = replaced.split(`{{${key}}}`).join(safe);
+    }
+
+    // Put replaced text in first w:t, clear the rest
+    let firstDone = false;
+    return para.replace(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g, (m, open, content, close) => {
+      if (!firstDone) {
+        firstDone = true;
+        // Preserve xml:space="preserve" if needed
+        const needsPreserve = replaced !== replaced.trim();
+        if (needsPreserve && !open.includes('xml:space')) {
+          open = open.replace('<w:t', '<w:t xml:space="preserve"');
+        }
+        return `${open}${replaced}${close}`;
+      }
+      return `${open}${close}`;
+    });
+  });
+
+  return result;
 }
 
 Deno.serve(async (req) => {
@@ -49,129 +106,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No se pudo descargar el template', status: templateRes.status }, { status: 500 });
     }
     const templateBuffer = await templateRes.arrayBuffer();
-    console.log('Template downloaded, size:', templateBuffer.byteLength);
 
-    // Fill DOCX template
-    // Word splits {{tag}} across multiple XML runs. We extract plain text per paragraph,
-    // resolve tags there, then inject the result back.
-    // The real fix: scan all <w:t> nodes and concatenate them, then inject resolved text.
-    
-    function fixDocxXml(xml) {
-      // Step 1: collect all w:t text nodes and their positions in order to rebuild
-      // The standard approach: replace entire paragraph XML text while keeping structure
-      // Here we use a simpler heuristic: find <w:t> contents that together form a tag
-      // by looking at consecutive runs and merging their text content.
-      
-      // Build a flat view of the XML with all w:t replaced by a sentinel that includes index
-      let counter = 0;
-      const texts = [];
-      const withSentinels = xml.replace(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g, (match, open, content, close) => {
-        const idx = counter++;
-        texts.push(content);
-        return `${open}__SENTINEL_${idx}__${close}`;
-      });
-      
-      // Join all texts and fix broken tags (find {{..}} spans across sentinels)
-      const joined = texts.join('');
-      
-      // Now reconstruct: replace sentinels back but with corrected content
-      // The trick: find tags that span across multiple sentinels and consolidate
-      // We do this by computing a cumulative string and identifying which sentinel
-      // positions correspond to tag boundaries
-      
-      // Simple approach: reconstruct each sentinel's text by scanning the joined string
-      let pos = 0;
-      const sentinelLengths = texts.map(t => t.length);
-      const sentinelStarts = [];
-      for (let i = 0; i < texts.length; i++) {
-        sentinelStarts.push(pos);
-        pos += texts[i].length;
-      }
-      
-      // Find all {{tag}} positions in the joined string
-      const tagRegex = /\{\{[^{}]+\}\}/g;
-      const tags = [];
-      let tm;
-      while ((tm = tagRegex.exec(joined)) !== null) {
-        tags.push({ start: tm.index, end: tm.index + tm[0].length, text: tm[0] });
-      }
-      
-      // For each tag, figure out which sentinels it spans and consolidate
-      const newTexts = [...texts];
-      for (const tag of tags) {
-        // Find first and last sentinel that overlap with this tag
-        let firstSentinel = -1, lastSentinel = -1;
-        for (let i = 0; i < texts.length; i++) {
-          const sStart = sentinelStarts[i];
-          const sEnd = sStart + texts[i].length;
-          if (sEnd > tag.start && sStart < tag.end) {
-            if (firstSentinel === -1) firstSentinel = i;
-            lastSentinel = i;
-          }
-        }
-        if (firstSentinel === -1 || firstSentinel === lastSentinel) continue;
-        
-        // Merge: put full text in first sentinel, empty others
-        // Rebuild the first sentinel's text: text before tag.start + tag.text + text after tag.end
-        const firstStart = sentinelStarts[firstSentinel];
-        const lastEnd = sentinelStarts[lastSentinel] + texts[lastSentinel].length;
-        const beforeTag = joined.substring(firstStart, tag.start);
-        const afterTag = joined.substring(tag.end, lastEnd);
-        newTexts[firstSentinel] = beforeTag + tag.text + afterTag;
-        for (let i = firstSentinel + 1; i <= lastSentinel; i++) {
-          newTexts[i] = '';
-        }
-      }
-      
-      // Rebuild XML with new sentinel values
-      let idx2 = 0;
-      return withSentinels.replace(/__SENTINEL_(\d+)__/g, (match, num) => {
-        return newTexts[parseInt(num)];
-      });
+    const zip = new PizZip(templateBuffer);
+    const rawXml = zip.files['word/document.xml'].asText();
+
+    // DEBUG: inspect raw XML
+    if (format === 'debug') {
+      const idx = rawXml.indexOf('{');
+      return Response.json({ snippet: idx >= 0 ? rawXml.substring(Math.max(0, idx - 50), idx + 600) : 'NOT FOUND', len: rawXml.length });
     }
 
-    let zip;
-    let rawDocXml = '';
-    try {
-      zip = new PizZip(templateBuffer);
-      rawDocXml = zip.files['word/document.xml'].asText();
+    const filledXml = fillDocxXml(rawXml, data);
+    zip.file('word/document.xml', filledXml);
 
-      // DEBUG: return XML snippet
-      if (format === 'debug') {
-        const idx = rawDocXml.indexOf('{');
-        return Response.json({ 
-          snippet: idx >= 0 ? rawDocXml.substring(Math.max(0, idx - 50), idx + 600) : 'NOT FOUND',
-          len: rawDocXml.length 
-        });
-      }
-
-      zip.file('word/document.xml', fixDocxXml(rawDocXml));
-    } catch (e) {
-      return Response.json({ error: 'PizZip error: ' + e.message }, { status: 500 });
-    }
-
-    let doc;
-    try {
-      doc = new Docxtemplater(zip, {
-        paragraphLoop: true,
-        linebreaks: true,
-        nullGetter: () => '',
-      });
-      console.log('Docxtemplater created OK');
-    } catch (e) {
-      const details = e.properties?.errors?.map(x => x.message || String(x)) || [e.message];
-      return Response.json({ error: 'Docxtemplater init error', details }, { status: 500 });
-    }
-
-    try {
-      doc.render(data);
-      console.log('Render OK');
-    } catch (e) {
-      const details = e.properties?.errors?.map(x => x.message || String(x)) || [e.message];
-      return Response.json({ error: 'Render error', details }, { status: 500 });
-    }
-
-    const docxBuffer = doc.getZip().generate({ type: 'uint8array' });
+    const docxBuffer = zip.generate({ type: 'uint8array' });
     const fileName = `Normativa-${delivery.recipient_name}-${delivery.equipment_asset}`;
 
     if (format === 'docx') {
@@ -184,7 +132,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate PDF from the filled content
+    // Generate PDF using jsPDF
     const pdfDoc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = pdfDoc.internal.pageSize.getWidth();
     const pageHeight = pdfDoc.internal.pageSize.getHeight();
@@ -207,13 +155,11 @@ Deno.serve(async (req) => {
 
     const gap = (mm = 4) => { y += mm; };
 
-    // Header
     addText(`Buenos Aires, ${data.fecha}`, { size: 10 });
     gap(6);
     addText('NORMATIVA CORPORATIVA DE PORTÁTILES', { bold: true, size: 12, center: true });
     gap(6);
 
-    // Preamble
     addText(`Entre NEPHROLOGY S.A., domiciliada en Austria 2008, CP1425, de la Ciudad Autónoma de Buenos Aires, representada en este acto por la Sra. Gomez Coll Julieta María, DNI 36.194.528 en su carácter de apoderada (en adelante, la "Compañía") por una parte, y por la otra parte, el Sr/a. ${data.empleado_nombre}, DNI ${data.empleado_dni}, con domicilio real en ${data.empleado_domicilio}, ${data.empleado_ciudad} de Buenos Aires (en adelante, la "Empleada"), se acuerda celebrar el presente convenio, sujeto a las siguientes cláusulas y condiciones:`);
     gap();
 
@@ -234,7 +180,6 @@ Deno.serve(async (req) => {
       if (y > pageHeight - 30) { pdfDoc.addPage(); y = 20; }
       addText(title, { bold: true, size: 10 });
       y += 1;
-      // Handle paragraphs separated by \n\n
       const paragraphs = content.split('\n\n');
       for (const p of paragraphs) {
         addText(p, { size: 10 });
@@ -250,7 +195,6 @@ Deno.serve(async (req) => {
     gap(6);
     addText(`EN PRUEBA DE CONFORMIDAD se firman dos ejemplares de un mismo tenor, uno para el Empleado y uno para la Compañía, en la Ciudad Autónoma de Buenos Aires al ${data.fecha_firma}.`);
 
-    // Signature lines
     gap(15);
     if (y > pageHeight - 30) { pdfDoc.addPage(); y = 20; }
     pdfDoc.setDrawColor(0);

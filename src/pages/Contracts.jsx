@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Download } from "lucide-react";
+import { Search, Download, FileText } from "lucide-react";
 
 export default function Contracts() {
   const [search, setSearch] = useState("");
@@ -23,17 +23,22 @@ export default function Contracts() {
     return matchSearch;
   });
 
-  const handleDownload = async (deliveryId, recipientName) => {
+  const handleDownload = async (deliveryId, recipientName, format = 'pdf') => {
+    const key = `${deliveryId}-${format}`;
     try {
-      setDownloading(deliveryId);
-      const response = await base44.functions.invoke('generateContractPdf', { deliveryId });
+      setDownloading(key);
+      const response = await base44.functions.invoke('generateContractPdf', { deliveryId, format });
       
       if (response.data) {
-        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const mimeType = format === 'docx'
+          ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          : 'application/pdf';
+        const ext = format === 'docx' ? 'docx' : 'pdf';
+        const blob = new Blob([response.data], { type: mimeType });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Contrato-${recipientName}.pdf`;
+        a.download = `Normativa-${recipientName}.${ext}`;
         a.click();
         window.URL.revokeObjectURL(url);
       }
@@ -89,16 +94,32 @@ export default function Contracts() {
                     {new Date(delivery.delivery_date).toLocaleDateString('es-AR')}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => handleDownload(delivery.id, delivery.recipient_name)}
-                      disabled={downloading === delivery.id}
-                      title="Descargar PDF"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleDownload(delivery.id, delivery.recipient_name, 'pdf')}
+                        disabled={!!downloading}
+                        title="Descargar PDF"
+                      >
+                        {downloading === `${delivery.id}-pdf` 
+                          ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          : <Download className="w-4 h-4" />}
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleDownload(delivery.id, delivery.recipient_name, 'docx')}
+                        disabled={!!downloading}
+                        title="Descargar Word (.docx)"
+                      >
+                        {downloading === `${delivery.id}-docx`
+                          ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          : <FileText className="w-4 h-4" />}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
