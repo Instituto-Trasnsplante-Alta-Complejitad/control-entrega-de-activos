@@ -14,6 +14,7 @@ export default function NewDelivery() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
 
   const [form, setForm] = useState({
     recipient_name: "",
@@ -31,6 +32,7 @@ export default function NewDelivery() {
   });
 
   const availableEquipment = equipment.filter((e) => e.status === "disponible");
+  const filteredEquipment = availableEquipment.filter((e) => !typeFilter || typeFilter === "todos" || e.type === typeFilter);
   const selectedEquipment = equipment.find((e) => e.id === selectedEquipmentId);
 
   const handleSubmit = async (e) => {
@@ -85,13 +87,26 @@ export default function NewDelivery() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Equipo a entregar</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setSelectedEquipmentId(""); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por tipo de equipo..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los tipos</SelectItem>
+                <SelectItem value="notebook">Notebook</SelectItem>
+                <SelectItem value="tablet">Tablet</SelectItem>
+                <SelectItem value="celular">Celular</SelectItem>
+                <SelectItem value="cpu">CPU</SelectItem>
+                <SelectItem value="otro">Otro</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={selectedEquipmentId} onValueChange={setSelectedEquipmentId}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar equipo disponible..." />
               </SelectTrigger>
               <SelectContent>
-                {availableEquipment.map((eq) => (
+                {filteredEquipment.map((eq) => (
                   <SelectItem key={eq.id} value={eq.id}>
                     {eq.asset_number} — {eq.brand} {eq.model} ({eq.serial_number})
                   </SelectItem>
