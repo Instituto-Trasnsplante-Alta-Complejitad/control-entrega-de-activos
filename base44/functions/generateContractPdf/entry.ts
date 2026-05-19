@@ -108,7 +108,9 @@ Deno.serve(async (req) => {
     const templateBuffer = await templateRes.arrayBuffer();
 
     const zip = new PizZip(templateBuffer);
-    const rawXml = zip.files['word/document.xml'].asText();
+    // Force UTF-8 decode of the XML content
+    const rawBytes = zip.files['word/document.xml'].asUint8Array();
+    const rawXml = new TextDecoder('utf-8').decode(rawBytes);
 
     // DEBUG: inspect raw XML
     if (format === 'debug') {
@@ -117,7 +119,9 @@ Deno.serve(async (req) => {
     }
 
     const filledXml = fillDocxXml(rawXml, data);
-    zip.file('word/document.xml', filledXml);
+    // Re-encode as UTF-8 bytes when saving back into the zip
+    const filledBytes = new TextEncoder().encode(filledXml);
+    zip.file('word/document.xml', filledBytes);
 
     const docxBuffer = zip.generate({ type: 'uint8array' });
     const fileName = `Normativa-${delivery.recipient_name}-${delivery.equipment_asset}`;
