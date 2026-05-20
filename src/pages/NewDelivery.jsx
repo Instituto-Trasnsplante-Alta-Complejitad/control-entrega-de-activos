@@ -156,7 +156,43 @@ export default function NewDelivery() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Ciudad</Label>
-                <Input value={form.recipient_city} onChange={(e) => setForm({ ...form, recipient_city: e.target.value })} />
+                <Select value={form.recipient_city} onValueChange={(val) => setForm({ ...form, recipient_city: val })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar ciudad..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ciudad Autónoma de Buenos Aires">Ciudad Autónoma de Buenos Aires</SelectItem>
+                    <SelectItem value="La Plata">La Plata</SelectItem>
+                    <SelectItem value="Mar del Plata">Mar del Plata</SelectItem>
+                    <SelectItem value="Quilmes">Quilmes</SelectItem>
+                    <SelectItem value="Lanús">Lanús</SelectItem>
+                    <SelectItem value="Lomas de Zamora">Lomas de Zamora</SelectItem>
+                    <SelectItem value="Almirante Brown">Almirante Brown</SelectItem>
+                    <SelectItem value="Morón">Morón</SelectItem>
+                    <SelectItem value="Tigre">Tigre</SelectItem>
+                    <SelectItem value="San Isidro">San Isidro</SelectItem>
+                    <SelectItem value="Vicente López">Vicente López</SelectItem>
+                    <SelectItem value="General San Martín">General San Martín</SelectItem>
+                    <SelectItem value="Tres de Febrero">Tres de Febrero</SelectItem>
+                    <SelectItem value="Hurlingham">Hurlingham</SelectItem>
+                    <SelectItem value="Ituzaingó">Ituzaingó</SelectItem>
+                    <SelectItem value="Merlo">Merlo</SelectItem>
+                    <SelectItem value="Moreno">Moreno</SelectItem>
+                    <SelectItem value="La Matanza">La Matanza</SelectItem>
+                    <SelectItem value="Esteban Echeverría">Esteban Echeverría</SelectItem>
+                    <SelectItem value="Florencio Varela">Florencio Varela</SelectItem>
+                    <SelectItem value="Berazategui">Berazategui</SelectItem>
+                    <SelectItem value="Avellaneda">Avellaneda</SelectItem>
+                    <SelectItem value="San Fernando">San Fernando</SelectItem>
+                    <SelectItem value="Zárate">Zárate</SelectItem>
+                    <SelectItem value="Campana">Campana</SelectItem>
+                    <SelectItem value="Pilar">Pilar</SelectItem>
+                    <SelectItem value="Escobar">Escobar</SelectItem>
+                    <SelectItem value="José C. Paz">José C. Paz</SelectItem>
+                    <SelectItem value="Malvinas Argentinas">Malvinas Argentinas</SelectItem>
+                    <SelectItem value="San Miguel">San Miguel</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Fecha de entrega *</Label>
