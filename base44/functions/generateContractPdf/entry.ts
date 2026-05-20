@@ -105,7 +105,14 @@ function buildHtml(data) {
 <body>
 <div class="page">
 
-  <p class="fecha">Buenos Aires, ${data.fecha}</p>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18pt;">
+    <div style="text-align: left; line-height: 1.1;">
+      <div style="font-size: 36pt; font-weight: bold; color: #E8896A; letter-spacing: 2px; font-family: Arial, sans-serif;">ITAC</div>
+      <div style="font-size: 8pt; color: #E8896A; font-family: Arial, sans-serif;">Instituto de Trasplantes</div>
+      <div style="font-size: 8pt; color: #E8896A; font-family: Arial, sans-serif;">y Alta Complejidad</div>
+    </div>
+    <p class="fecha" style="margin-bottom: 0;">Buenos Aires, ${data.fecha}</p>
+  </div>
 
   <h1>Normativa Corporativa de Portátiles</h1>
 
@@ -215,6 +222,23 @@ function buildHtml(data) {
     Asimismo, se compromete a cumplir con todas las normas establecidas en los incisos anteriores.
   </p>
 
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20pt; font-size: 10pt;">
+    <thead>
+      <tr>
+        <th style="background: #000; color: #fff; border: 1px solid #000; padding: 8pt 10pt; text-align: center; font-weight: bold;">Nombre del dispositivo</th>
+        <th style="background: #000; color: #fff; border: 1px solid #000; padding: 8pt 10pt; text-align: center; font-weight: bold;">Marca / Modelo</th>
+        <th style="background: #000; color: #fff; border: 1px solid #000; padding: 8pt 10pt; text-align: center; font-weight: bold;">N° de Serie</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border: 1px solid #000; padding: 16pt 10pt; text-align: center; height: 40pt;">${data.equipo_tipo}</td>
+        <td style="border: 1px solid #000; padding: 16pt 10pt; text-align: center;">${data.equipo_marca} ${data.equipo_modelo}</td>
+        <td style="border: 1px solid #000; padding: 16pt 10pt; text-align: center;">${data.equipo_serie}</td>
+      </tr>
+    </tbody>
+  </table>
+
   <p class="conformidad">
     <strong>EN PRUEBA DE CONFORMIDAD</strong> se firman dos ejemplares de un mismo tenor, uno para el Empleado
     y uno para la Compañía, en la Ciudad Autónoma de Buenos Aires al ${data.fecha_firma}.
@@ -262,6 +286,7 @@ Deno.serve(async (req) => {
       empleado_dni: delivery.recipient_dni || '',
       empleado_domicilio: delivery.recipient_address || '',
       empleado_ciudad: delivery.recipient_city || '',
+      equipo_tipo: delivery.equipment_type || '',
       equipo_marca: delivery.equipment_brand || '',
       equipo_modelo: delivery.equipment_model || '',
       equipo_serie: delivery.equipment_serial || '',
