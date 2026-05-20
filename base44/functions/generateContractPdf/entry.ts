@@ -244,8 +244,9 @@ function buildHtml(data) {
     y uno para la Compañía, en la Ciudad Autónoma de Buenos Aires al ${data.fecha_firma}.
   </p>
 
-  <div class="firmas">
+  <div style="display: flex; justify-content: space-between; margin-top: 20pt; gap: 40px; align-items: flex-end;">
     <div style="flex: 1;">
+      <div style="height: 60px;"></div>
       <div style="border-top: 1px solid #000; padding-top: 6pt; font-size: 10pt;">
         <p>${data.empleado_nombre}</p>
         <p>DNI: ${data.empleado_dni}</p>
@@ -253,7 +254,7 @@ function buildHtml(data) {
       </div>
     </div>
     <div style="flex: 1;">
-      <div style="height: 60px; display: flex; align-items: flex-end; margin-bottom: 0;">
+      <div style="height: 60px; display: flex; align-items: flex-end;">
         <img src="https://media.base44.com/images/public/6a0b41b518760c50f55478db/4c6ceb5ff_image.png" 
              style="height: 55px; display: block;" alt="Firma" />
       </div>
