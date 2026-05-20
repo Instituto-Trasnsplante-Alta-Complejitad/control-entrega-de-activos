@@ -232,7 +232,7 @@ function buildHtml(data) {
     </thead>
     <tbody>
       <tr>
-        <td style="border: 1px solid #000; padding: 16pt 10pt; text-align: center; height: 40pt;">${data.equipo_tipo}</td>
+        <td style="border: 1px solid #000; padding: 16pt 10pt; text-align: center; height: 40pt;">${data.equipo_asset}</td>
         <td style="border: 1px solid #000; padding: 16pt 10pt; text-align: center;">${data.equipo_marca} ${data.equipo_modelo}</td>
         <td style="border: 1px solid #000; padding: 16pt 10pt; text-align: center;">${data.equipo_serie}</td>
       </tr>
