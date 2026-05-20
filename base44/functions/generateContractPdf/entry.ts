@@ -107,21 +107,27 @@ Deno.serve(async (req) => {
     }
     const templateBuffer = await templateRes.arrayBuffer();
 
-    // Load zip from raw ArrayBuffer bytes to avoid any Latin-1 reinterpretation
+    // Load zip — pass as base64 to avoid PizZip Latin-1 misinterpretation of binary
     const templateUint8 = new Uint8Array(templateBuffer);
-    const zip = new PizZip(templateUint8);
-    // Read the XML as raw bytes and decode as UTF-8 explicitly
+    // Convert to base64 string for safe PizZip loading
+    let binary = '';
+    for (let i = 0; i < templateUint8.length; i++) {
+      binary += String.fromCharCode(templateUint8[i]);
+    }
+    const base64 = btoa(binary);
+    const zip = new PizZip(base64, { base64: true });
+
+    // Decode XML as UTF-8 explicitly
     const rawBytes = zip.files['word/document.xml'].asUint8Array();
     const rawXml = new TextDecoder('utf-8').decode(rawBytes);
 
-
-
     const filledXml = fillDocxXml(rawXml, data);
-    // Store as Uint8Array so PizZip never touches the encoding
+
+    // Re-encode as UTF-8 and store as binary to preserve encoding
     const filledBytes = new TextEncoder().encode(filledXml);
     zip.file('word/document.xml', filledBytes, { binary: true });
 
-    const docxBuffer = zip.generate({ type: 'uint8array', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const docxBuffer = zip.generate({ type: 'uint8array', compression: 'DEFLATE' });
     const fileName = `Normativa-${delivery.recipient_name}-${delivery.equipment_asset}`;
 
     if (format === 'docx') {
