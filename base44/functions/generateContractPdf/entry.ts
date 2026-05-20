@@ -250,10 +250,14 @@ function buildHtml(data) {
       <p>DNI: ${data.empleado_dni}</p>
       <p>Empleado</p>
     </div>
-    <div class="firma-bloque">
-      <p>Julieta Gomez Coll</p>
-      <p>Gerente de RR.HH. y Sistemas</p>
-      <p>Nephrology S.A.</p>
+    <div class="firma-bloque" style="border-top: none; padding-top: 0;">
+      <img src="https://media.base44.com/images/public/6a0b41b518760c50f55478db/4c6ceb5ff_image.png" 
+           style="height: 60px; display: block; margin-bottom: 4pt;" alt="Firma" />
+      <div style="border-top: 1px solid #000; padding-top: 6pt;">
+        <p>Julieta Gomez Coll</p>
+        <p>Gerente de RR.HH. y Sistemas</p>
+        <p>Nephrology S.A.</p>
+      </div>
     </div>
   </div>
 
