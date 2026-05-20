@@ -29,10 +29,11 @@ export default function Contracts() {
       setDownloading(key);
       const response = await base44.functions.invoke('generateContractPdf', { deliveryId, format });
       if (response.data) {
-        const blob = new Blob([response.data], { type: 'text/html;charset=utf-8' });
-        const url = window.URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+        const html = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+        const win = window.open('', '_blank');
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
       }
     } catch (error) {
       console.error('Error abriendo contrato:', error);
