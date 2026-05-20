@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Download, FileText } from "lucide-react";
+import { Search, FileText } from "lucide-react";
 
 export default function Contracts() {
   const [search, setSearch] = useState("");
@@ -23,28 +23,20 @@ export default function Contracts() {
     return matchSearch;
   });
 
-  const handleDownload = async (deliveryId, recipientName, format = 'pdf') => {
+  const handleOpen = async (deliveryId, format = 'pdf') => {
     const key = `${deliveryId}-${format}`;
     try {
       setDownloading(key);
       const response = await base44.functions.invoke('generateContractPdf', { deliveryId, format });
-      
       if (response.data) {
-        const mimeType = format === 'docx'
-          ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-          : 'application/pdf';
-        const ext = format === 'docx' ? 'docx' : 'pdf';
-        const blob = new Blob([response.data], { type: mimeType });
+        const blob = new Blob([response.data], { type: 'text/html;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Normativa-${recipientName}.${ext}`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 5000);
       }
     } catch (error) {
-      console.error('Error descargando contrato:', error);
-      alert('Error al descargar el contrato');
+      console.error('Error abriendo contrato:', error);
+      alert('Error al generar el contrato');
     } finally {
       setDownloading(null);
     }
@@ -97,27 +89,16 @@ export default function Contracts() {
                     <div className="flex items-center justify-end gap-1">
                       <Button 
                         variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleDownload(delivery.id, delivery.recipient_name, 'pdf')}
+                        size="sm" 
+                        className="h-8 gap-1 text-xs"
+                        onClick={() => handleOpen(delivery.id, 'pdf')}
                         disabled={!!downloading}
-                        title="Descargar PDF"
+                        title="Ver contrato (imprimir como PDF con Ctrl+P)"
                       >
                         {downloading === `${delivery.id}-pdf` 
-                          ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          : <Download className="w-4 h-4" />}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleDownload(delivery.id, delivery.recipient_name, 'docx')}
-                        disabled={!!downloading}
-                        title="Descargar Word (.docx)"
-                      >
-                        {downloading === `${delivery.id}-docx`
-                          ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          : <FileText className="w-4 h-4" />}
+                          ? <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          : <FileText className="w-3.5 h-3.5" />}
+                        Ver contrato
                       </Button>
                     </div>
                   </TableCell>
