@@ -56,7 +56,12 @@ export default function NewDelivery() {
     };
 
     const delivery = await base44.entities.Delivery.create(deliveryData);
-    await base44.entities.Equipment.update(selectedEquipmentId, { status: "asignado", department: form.department });
+    await base44.entities.Equipment.update(selectedEquipmentId, {
+      status: "asignado",
+      department: form.department,
+      assigned_to: form.recipient_name,
+      delivery_date: form.delivery_date,
+    });
 
     queryClient.invalidateQueries({ queryKey: ["equipment"] });
     queryClient.invalidateQueries({ queryKey: ["deliveries"] });
