@@ -107,23 +107,21 @@ Deno.serve(async (req) => {
     }
     const templateBuffer = await templateRes.arrayBuffer();
 
-    const zip = new PizZip(templateBuffer);
-    // Force UTF-8 decode of the XML content
+    // Load zip from raw ArrayBuffer bytes to avoid any Latin-1 reinterpretation
+    const templateUint8 = new Uint8Array(templateBuffer);
+    const zip = new PizZip(templateUint8);
+    // Read the XML as raw bytes and decode as UTF-8 explicitly
     const rawBytes = zip.files['word/document.xml'].asUint8Array();
     const rawXml = new TextDecoder('utf-8').decode(rawBytes);
 
-    // DEBUG: inspect raw XML
-    if (format === 'debug') {
-      const idx = rawXml.indexOf('{');
-      return Response.json({ snippet: idx >= 0 ? rawXml.substring(Math.max(0, idx - 50), idx + 600) : 'NOT FOUND', len: rawXml.length });
-    }
+
 
     const filledXml = fillDocxXml(rawXml, data);
-    // Re-encode as UTF-8 bytes when saving back into the zip
+    // Store as Uint8Array so PizZip never touches the encoding
     const filledBytes = new TextEncoder().encode(filledXml);
-    zip.file('word/document.xml', filledBytes);
+    zip.file('word/document.xml', filledBytes, { binary: true });
 
-    const docxBuffer = zip.generate({ type: 'uint8array' });
+    const docxBuffer = zip.generate({ type: 'uint8array', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     const fileName = `Normativa-${delivery.recipient_name}-${delivery.equipment_asset}`;
 
     if (format === 'docx') {
