@@ -38,7 +38,7 @@ export default function NewDelivery() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedEquipmentId) {
-      toast({ title: "Error", description: "Seleccioná un equipo", variant: "destructive" });
+      toast({ title: "Error", description: "Seleccioná un equipo", variant: "destructive", duration: 1000 });
       return;
     }
 
@@ -66,7 +66,7 @@ export default function NewDelivery() {
     queryClient.invalidateQueries({ queryKey: ["equipment"] });
     queryClient.invalidateQueries({ queryKey: ["deliveries"] });
 
-    toast({ title: "Entrega registrada", description: "La entrega se registró correctamente" });
+    toast({ title: "Entrega registrada", description: "La entrega se registró correctamente", duration: 1000 });
 
     setForm({
       recipient_name: "",
