@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Monitor, PackageCheck, Clock, AlertTriangle } from "lucide-react";
+import { Monitor, PackageCheck, Clock, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -22,7 +22,7 @@ export default function Dashboard() {
     total: equipment.length,
     available: equipment.filter((e) => e.status === "disponible").length,
     assigned: equipment.filter((e) => e.status === "asignado").length,
-    pending: deliveries.filter((d) => d.status === "pendiente").length,
+    contracts: deliveries.length,
   };
 
   const recentDeliveries = deliveries.slice(0, 8);
@@ -45,7 +45,7 @@ export default function Dashboard() {
         <StatCard title="Total Equipos" value={stats.total} icon={Monitor} color="bg-primary" />
         <StatCard title="Disponibles" value={stats.available} icon={PackageCheck} color="bg-green-500" />
         <StatCard title="Asignados" value={stats.assigned} icon={Clock} color="bg-blue-500" />
-        <StatCard title="Pendientes Firma" value={stats.pending} icon={AlertTriangle} color="bg-amber-500" />
+        <StatCard title="Contratos" value={stats.contracts} icon={FileText} color="bg-amber-500" />
       </div>
 
       <Card>
