@@ -4,7 +4,8 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import EquipmentTable from "@/components/stock/EquipmentTable";
 import EquipmentForm from "@/components/stock/EquipmentForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -77,6 +78,26 @@ export default function Stock() {
 
   const departments = [...new Set(equipment.map((e) => e.department).filter(Boolean))].sort();
 
+  const handleExportExcel = () => {
+    const rows = equipment.map((e) => ({
+      "Activo": e.asset_number,
+      "Tipo": e.type,
+      "Marca": e.brand,
+      "Modelo": e.model,
+      "N° Serie": e.serial_number,
+      "Estado": e.status,
+      "Asignado a": e.assigned_to || "",
+      "Usuario de red": e.username || "",
+      "Ubicación / Sector": e.department || "",
+      "Fecha Entrega": e.delivery_date || "",
+      "Observaciones": e.comments || "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Equipos");
+    XLSX.writeFile(wb, `stock_equipos_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -84,9 +105,14 @@ export default function Stock() {
           <h1 className="text-2xl font-bold">Stock de Equipos</h1>
           <p className="text-sm text-muted-foreground mt-1">{filtered.length} de {equipment.length} equipos</p>
         </div>
-        <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 self-start">
-          <Plus className="w-4 h-4" /> Nuevo Equipo
-        </Button>
+        <div className="flex gap-2 self-start">
+          <Button variant="outline" onClick={handleExportExcel} className="gap-2">
+            <Download className="w-4 h-4" /> Exportar Excel
+          </Button>
+          <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2">
+            <Plus className="w-4 h-4" /> Nuevo Equipo
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">
