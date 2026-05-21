@@ -13,10 +13,13 @@ export default function Sidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border min-h-screen p-4">
-      <div className="mb-8 px-3">
-        <h1 className="text-xl font-bold text-foreground tracking-tight">Inventario IT</h1>
-        <p className="text-xs text-muted-foreground mt-1">Control de Equipamiento</p>
+    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-border min-h-screen p-4">
+      <div className="mb-8 px-2 flex items-center gap-3">
+        <div className="flex flex-col leading-none">
+          <span style={{fontFamily: 'Arial, sans-serif', fontSize: '28px', fontWeight: 'bold', color: '#E8896A', letterSpacing: '2px'}}>ITAC</span>
+          <span style={{fontSize: '8px', color: '#E8896A', lineHeight: '1.2'}}>Instituto de Trasplantes</span>
+          <span style={{fontSize: '8px', color: '#E8896A', lineHeight: '1.2'}}>y Alta Complejidad</span>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -27,9 +30,9 @@ export default function Sidebar() {
               key={item.path}
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-              isActive ?
-              "bg-primary text-primary-foreground shadow-sm" :
-              "text-muted-foreground hover:bg-accent hover:text-foreground"}`
+              isActive
+                ? "bg-[#E8896A] text-white shadow-sm"
+                : "text-muted-foreground hover:bg-orange-50 hover:text-foreground"}`
               }>
               
               <item.icon className="w-4 h-4" />
