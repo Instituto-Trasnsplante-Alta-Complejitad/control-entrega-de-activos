@@ -18,7 +18,7 @@ export default function Sidebar() {
         <img 
           src="https://media.base44.com/images/public/6a0b41b518760c50f55478db/63ccb28ee_WhatsAppImage2026-05-22at103628AM.jpg" 
           alt="ITAC Logo" 
-          className="w-full max-w-[160px]"
+          className="w-full max-w-[160px] object-contain"
         />
       </div>
 
