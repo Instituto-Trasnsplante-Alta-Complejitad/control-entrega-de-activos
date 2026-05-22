@@ -14,12 +14,12 @@ export default function Sidebar() {
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-border min-h-screen p-4">
-      <div className="mb-8 px-2 flex items-center gap-3">
-        <div className="flex flex-col leading-none">
-          <span style={{fontFamily: 'Arial, sans-serif', fontSize: '28px', fontWeight: 'bold', color: '#E8896A', letterSpacing: '2px'}}>ITAC</span>
-          <span style={{fontSize: '8px', color: '#E8896A', lineHeight: '1.2'}}>Instituto de Trasplantes</span>
-          <span style={{fontSize: '8px', color: '#E8896A', lineHeight: '1.2'}}>y Alta Complejidad</span>
-        </div>
+      <div className="mb-8 px-2">
+        <img 
+          src="https://media.base44.com/images/public/6a0b41b518760c50f55478db/63ccb28ee_WhatsAppImage2026-05-22at103628AM.jpg" 
+          alt="ITAC Logo" 
+          className="w-full max-w-[160px]"
+        />
       </div>
 
       <nav className="flex-1 space-y-1">

@@ -68,23 +68,5 @@
     "brand",
     "model",
     "serial_number"
-  ],
-  "rls": {
-    "create": {
-      "authenticated": true
-    },
-    "read": {
-      "authenticated": true
-    },
-    "update": {
-      "user_condition": {
-        "role": "admin"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
-  }
+  ]
 }
