@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 export default function StatCard({ title, value, icon: Icon, color }) {
   return (
     <Card className="p-5 relative overflow-hidden group hover:shadow-md transition-shadow duration-300">
-      <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-10 ${color}`} />
+      <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-10 bg-[#83db24] ${color}`} />
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-muted-foreground font-medium">{title}</p>
@@ -13,6 +13,6 @@ export default function StatCard({ title, value, icon: Icon, color }) {
           <Icon className="w-5 h-5 text-primary" />
         </div>
       </div>
-    </Card>
-  );
+    </Card>);
+
 }
