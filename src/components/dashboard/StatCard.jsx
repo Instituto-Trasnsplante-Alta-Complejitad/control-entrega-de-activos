@@ -9,7 +9,7 @@ export default function StatCard({ title, value, icon: Icon, color }) {
           <p className="text-sm text-muted-foreground font-medium">{title}</p>
           <p className="text-3xl font-bold mt-1.5 text-foreground">{value}</p>
         </div>
-        <div className={`p-2.5 rounded-xl opacity-75 ${color} bg-opacity-15`}>
+        <div className={`p-2.5 rounded-xl opacity-70 ${color} bg-opacity-15`}>
           <Icon className="w-5 h-5 text-primary" />
         </div>
       </div>
