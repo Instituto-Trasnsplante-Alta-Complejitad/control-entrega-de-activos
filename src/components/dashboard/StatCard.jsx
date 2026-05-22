@@ -3,14 +3,14 @@ import { Card } from "@/components/ui/card";
 export default function StatCard({ title, value, icon: Icon, color }) {
   return (
     <Card className="p-5 relative overflow-hidden group hover:shadow-md transition-shadow duration-300">
-      <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-10 bg-[#83db24] ${color}`} />
+      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-green-200 opacity-40" />
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-muted-foreground font-medium">{title}</p>
           <p className="text-3xl font-bold mt-1.5 text-foreground">{value}</p>
         </div>
-        <div className={`p-2.5 rounded-xl opacity-70 ${color} bg-opacity-15`}>
-          <Icon className="w-5 h-5 text-primary" />
+        <div className="relative z-10 p-2">
+          <Icon className="w-6 h-6 text-primary" />
         </div>
       </div>
     </Card>);
