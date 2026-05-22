@@ -71,14 +71,10 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "authenticated": true
     },
     "read": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "authenticated": true
     },
     "update": {
       "user_condition": {

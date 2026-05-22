@@ -84,9 +84,7 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "authenticated": true
     },
     "read": {
       "$or": [
@@ -96,10 +94,10 @@
           }
         },
         {
-          "created_by": "{{user.email}}"
+          "data.recipient_email": "{{user.email}}"
         },
         {
-          "data.recipient_email": "{{user.email}}"
+          "created_by": "{{user.email}}"
         }
       ]
     },
