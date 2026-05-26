@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 const statusMap = {
   disponible: { label: "Disponible", className: "bg-green-100 text-green-700 border-green-200" },
@@ -18,27 +19,65 @@ const typeMap = {
   otro: "Otro",
 };
 
+function SortIcon({ field, sortField, sortDir }) {
+  if (sortField !== field) return <ChevronsUpDown className="w-3.5 h-3.5 ml-1 text-muted-foreground/50" />;
+  return sortDir === "asc"
+    ? <ChevronUp className="w-3.5 h-3.5 ml-1 text-primary" />
+    : <ChevronDown className="w-3.5 h-3.5 ml-1 text-primary" />;
+}
+
 export default function EquipmentTable({ equipment, onEdit, onDelete }) {
+  const [sortField, setSortField] = useState("asset_number");
+  const [sortDir, setSortDir] = useState("asc");
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
+  const sorted = [...equipment].sort((a, b) => {
+    const valA = a[sortField] ?? "";
+    const valB = b[sortField] ?? "";
+    const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const th = (label, field, className = "") => (
+    <TableHead
+      className={`font-semibold cursor-pointer select-none hover:bg-muted/70 transition-colors ${className}`}
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center">
+        {label}
+        <SortIcon field={field} sortField={sortField} sortDir={sortDir} />
+      </div>
+    </TableHead>
+  );
+
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="font-semibold">N° Activo</TableHead>
-            <TableHead className="font-semibold">Tipo</TableHead>
-            <TableHead className="font-semibold">Marca</TableHead>
-            <TableHead className="font-semibold">Modelo</TableHead>
-            <TableHead className="font-semibold hidden md:table-cell">N° Serie</TableHead>
-            <TableHead className="font-semibold hidden lg:table-cell">Apellido y Nombre</TableHead>
-            <TableHead className="font-semibold hidden xl:table-cell">Usuario</TableHead>
-            <TableHead className="font-semibold hidden xl:table-cell">Sector</TableHead>
-            <TableHead className="font-semibold hidden lg:table-cell">Fecha Entrega</TableHead>
-            <TableHead className="font-semibold">Estado</TableHead>
+            {th("N° Activo", "asset_number")}
+            {th("Tipo", "type")}
+            {th("Marca", "brand")}
+            {th("Modelo", "model")}
+            {th("N° Serie", "serial_number", "hidden md:table-cell")}
+            {th("Apellido y Nombre", "assigned_to", "hidden lg:table-cell")}
+            {th("Usuario", "username", "hidden xl:table-cell")}
+            {th("Sector", "department", "hidden xl:table-cell")}
+            {th("Fecha Entrega", "delivery_date", "hidden lg:table-cell")}
+            {th("Estado", "status")}
             <TableHead className="font-semibold text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {equipment.map((item) => {
+          {sorted.map((item) => {
             const status = statusMap[item.status] || statusMap.disponible;
             return (
               <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
@@ -69,7 +108,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
               </TableRow>
             );
           })}
-          {equipment.length === 0 && (
+          {sorted.length === 0 && (
             <TableRow>
               <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                 No hay equipos registrados
