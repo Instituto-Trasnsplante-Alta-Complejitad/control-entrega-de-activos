@@ -40,6 +40,14 @@
       "default": "disponible",
       "description": "Estado del equipo"
     },
+    "user_type": {
+      "type": "string",
+      "enum": [
+        "interno",
+        "externo"
+      ],
+      "description": "Tipo de usuario: interno o externo a ITAC"
+    },
     "assigned_to": {
       "type": "string",
       "description": "Apellido y Nombre del usuario asignado"

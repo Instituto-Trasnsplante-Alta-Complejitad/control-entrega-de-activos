@@ -21,6 +21,11 @@ const STATUSES = [
   { value: "en_reparacion", label: "En reparación" },
 ];
 
+const USER_TYPES = [
+  { value: "interno", label: "Interno ITAC" },
+  { value: "externo", label: "Externo" },
+];
+
 export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
   const [form, setForm] = useState({
     asset_number: "",
@@ -29,6 +34,7 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
     model: "",
     serial_number: "",
     status: "disponible",
+    user_type: "",
     assigned_to: "",
     username: "",
     department: "",
@@ -45,6 +51,7 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
         model: equipment.model || "",
         serial_number: equipment.serial_number || "",
         status: equipment.status || "disponible",
+        user_type: equipment.user_type || "",
         assigned_to: equipment.assigned_to || "",
         username: equipment.username || "",
         department: equipment.department || "",
@@ -52,7 +59,7 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
         comments: equipment.comments || "",
       });
     } else {
-      setForm({ asset_number: "", type: "notebook", brand: "", model: "", serial_number: "", status: "disponible", assigned_to: "", username: "", department: "", delivery_date: "", comments: "" });
+      setForm({ asset_number: "", type: "notebook", brand: "", model: "", serial_number: "", status: "disponible", user_type: "", assigned_to: "", username: "", department: "", delivery_date: "", comments: "" });
     }
   }, [equipment, open]);
 
@@ -116,6 +123,17 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
             <div className="space-y-2">
               <Label>Usuario</Label>
               <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="Ej: jgarnph" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Tipo de Usuario</Label>
+              <Select value={form.user_type} onValueChange={(v) => setForm({ ...form, user_type: v })}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                <SelectContent>
+                  {USER_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
