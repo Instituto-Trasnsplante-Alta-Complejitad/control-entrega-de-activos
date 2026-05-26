@@ -32,6 +32,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
             <TableHead className="font-semibold hidden lg:table-cell">Apellido y Nombre</TableHead>
             <TableHead className="font-semibold hidden xl:table-cell">Usuario</TableHead>
             <TableHead className="font-semibold hidden xl:table-cell">Sector</TableHead>
+            <TableHead className="font-semibold hidden lg:table-cell">Fecha Entrega</TableHead>
             <TableHead className="font-semibold">Estado</TableHead>
             <TableHead className="font-semibold text-right">Acciones</TableHead>
           </TableRow>
@@ -49,6 +50,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
                 <TableCell className="hidden lg:table-cell text-sm">{item.assigned_to || "—"}</TableCell>
                 <TableCell className="hidden xl:table-cell font-mono text-xs">{item.username || "—"}</TableCell>
                 <TableCell className="hidden xl:table-cell text-sm">{item.department || "—"}</TableCell>
+                <TableCell className="hidden lg:table-cell text-sm">{item.delivery_date || "—"}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className={status.className}>
                     {status.label}
@@ -69,7 +71,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
           })}
           {equipment.length === 0 && (
             <TableRow>
-              <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+              <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                 No hay equipos registrados
               </TableCell>
             </TableRow>

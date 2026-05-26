@@ -24,7 +24,7 @@ export default function Stock() {
 
   const { data: equipment = [], isLoading } = useQuery({
     queryKey: ["equipment"],
-    queryFn: () => base44.entities.Equipment.list("-created_date", 500),
+    queryFn: () => base44.entities.Equipment.list("asset_number", 500),
   });
 
   const createMutation = useMutation({
