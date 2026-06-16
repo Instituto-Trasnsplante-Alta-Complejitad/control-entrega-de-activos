@@ -16,6 +16,7 @@ import Stock from '@/pages/Stock';
 import NewDelivery from '@/pages/NewDelivery';
 import AcceptDelivery from '@/pages/AcceptDelivery';
 import Contracts from '@/pages/Contracts';
+import EquipmentDetail from '@/pages/EquipmentDetail';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/aceptar" element={<AcceptDelivery />} />
+      <Route path="/equipo/:id" element={<EquipmentDetail />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />

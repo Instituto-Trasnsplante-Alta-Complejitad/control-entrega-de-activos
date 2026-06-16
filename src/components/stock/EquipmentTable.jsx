@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 const statusMap = {
@@ -29,6 +32,7 @@ function SortIcon({ field, sortField, sortDir }) {
 export default function EquipmentTable({ equipment, onEdit, onDelete }) {
   const [sortField, setSortField] = useState("asset_number");
   const [sortDir, setSortDir] = useState("asc");
+  const [qrItem, setQrItem] = useState(null);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -97,6 +101,9 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQrItem(item)} title="QR">
+                      <QrCode className="w-3.5 h-3.5" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
@@ -117,6 +124,29 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
           )}
         </TableBody>
       </Table>
+
+      <Dialog open={!!qrItem} onOpenChange={() => setQrItem(null)}>
+        <DialogContent className="sm:max-w-sm text-center">
+          <DialogHeader>
+            <DialogTitle>QR del Equipo</DialogTitle>
+          </DialogHeader>
+          {qrItem && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <QRCodeSVG
+                value={`${window.location.origin}/equipo/${qrItem.id}`}
+                size={200}
+                level="M"
+              />
+              <p className="text-sm text-muted-foreground">
+                {qrItem.brand} {qrItem.model} — {qrItem.asset_number}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Escaneá para ver las especificaciones
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

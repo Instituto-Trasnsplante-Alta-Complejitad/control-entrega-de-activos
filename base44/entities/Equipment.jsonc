@@ -68,6 +68,67 @@
     "comments": {
       "type": "string",
       "description": "Observaciones"
+    },
+    "peripherals_mouse": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mouse incluido"
+    },
+    "peripherals_keyboard": {
+      "type": "boolean",
+      "default": false,
+      "description": "Teclado incluido"
+    },
+    "peripherals_monitor": {
+      "type": "boolean",
+      "default": false,
+      "description": "Monitor incluido"
+    },
+    "peripherals_camera": {
+      "type": "boolean",
+      "default": false,
+      "description": "C\u00e1mara incluida"
+    },
+    "processor_model": {
+      "type": "string",
+      "description": "Modelo del procesador"
+    },
+    "storage_capacity": {
+      "type": "string",
+      "description": "Capacidad de almacenamiento (ej: 512 GB)"
+    },
+    "storage_type": {
+      "type": "string",
+      "enum": [
+        "HDD",
+        "SSD",
+        "NVMe"
+      ],
+      "description": "Tipo de almacenamiento"
+    },
+    "ram_amount": {
+      "type": "string",
+      "description": "Cantidad de RAM (ej: 16 GB)"
+    },
+    "ram_slots": {
+      "type": "number",
+      "description": "Slots utilizados de RAM"
+    },
+    "ram_speed": {
+      "type": "string",
+      "description": "Velocidad de RAM (ej: 3200 MHz)"
+    },
+    "ram_generation": {
+      "type": "string",
+      "description": "Generaci\u00f3n de RAM (ej: DDR4)"
+    },
+    "ram_format": {
+      "type": "string",
+      "description": "Formato de RAM (ej: DIMM, SO-DIMM)"
+    },
+    "operating_system": {
+      "type": "string",
+      "description": "Sistema operativo instalado"
     }
   },
   "required": [
