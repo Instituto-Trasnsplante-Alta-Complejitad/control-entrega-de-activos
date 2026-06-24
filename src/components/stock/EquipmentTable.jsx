@@ -29,6 +29,23 @@ function SortIcon({ field, sortField, sortDir }) {
     : <ChevronDown className="w-3.5 h-3.5 ml-1 text-primary" />;
 }
 
+function truncate(str, max = 30) {
+  if (!str) return "—";
+  return str.length > max ? str.slice(0, max) + "…" : str;
+}
+
+function isGarbled(str) {
+  if (!str) return false;
+  // Detectar cadenas con caracteres repetidos inválidos (ÿ, null bytes, etc.)
+  const garbled = (str.match(/[ÿ\x00-\x08\x0B\x0C\x0E-\x1F]/g) || []).length;
+  return garbled > 3 || garbled / str.length > 0.3;
+}
+
+function safeVal(str, max = 30) {
+  if (!str || isGarbled(str)) return "—";
+  return truncate(str, max);
+}
+
 export default function EquipmentTable({ equipment, onEdit, onDelete }) {
   const [sortField, setSortField] = useState("asset_number");
   const [sortDir, setSortDir] = useState("asc");
@@ -63,21 +80,20 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
   );
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <Table>
+    <div className="rounded-xl border border-border bg-card overflow-x-auto">
+      <Table className="table-fixed w-full">
         <TableHeader>
           <TableRow className="bg-muted/50">
-            {th("N° Activo", "asset_number")}
-            {th("Tipo", "type")}
-            {th("Marca", "brand")}
-            {th("Modelo", "model")}
-            {th("N° Serie", "serial_number", "hidden md:table-cell")}
-            {th("Apellido y Nombre", "assigned_to", "hidden lg:table-cell")}
-            {th("Usuario", "username", "hidden xl:table-cell")}
-            {th("Sector", "department", "hidden xl:table-cell")}
-            {th("Fecha Entrega", "delivery_date", "hidden lg:table-cell")}
-            {th("Estado", "status")}
-            <TableHead className="font-semibold text-right">Acciones</TableHead>
+            {th("N° Activo", "asset_number", "w-28")}
+            {th("Tipo", "type", "w-20")}
+            {th("Marca", "brand", "w-24")}
+            {th("Modelo", "model", "max-w-[150px]")}
+            {th("N° Serie", "serial_number", "hidden md:table-cell max-w-[130px]")}
+            {th("Apellido y Nombre", "assigned_to", "hidden lg:table-cell max-w-[150px]")}
+            {th("Usuario", "username", "hidden xl:table-cell w-24")}
+            {th("Sector", "department", "hidden xl:table-cell max-w-[120px]")}
+            {th("Estado", "status", "w-28")}
+            <TableHead className="font-semibold text-right w-24">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,15 +101,14 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
             const status = statusMap[item.status] || statusMap.disponible;
             return (
               <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                <TableCell className="font-mono text-xs">{item.asset_number}</TableCell>
-                <TableCell>{typeMap[item.type] || item.type}</TableCell>
-                <TableCell className="font-medium">{item.brand}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{item.model}</TableCell>
-                <TableCell className="hidden md:table-cell font-mono text-xs">{item.serial_number}</TableCell>
-                <TableCell className="hidden lg:table-cell text-sm">{item.assigned_to || "—"}</TableCell>
+                <TableCell className="font-mono text-xs whitespace-nowrap">{item.asset_number}</TableCell>
+                <TableCell className="text-xs">{typeMap[item.type] || item.type}</TableCell>
+                <TableCell className="font-medium text-sm max-w-[96px] truncate" title={item.brand}>{safeVal(item.brand, 14)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate" title={isGarbled(item.model) ? "" : item.model}>{safeVal(item.model, 22)}</TableCell>
+                <TableCell className="hidden md:table-cell font-mono text-xs max-w-[130px] truncate" title={isGarbled(item.serial_number) ? "" : item.serial_number}>{safeVal(item.serial_number, 20)}</TableCell>
+                <TableCell className="hidden lg:table-cell text-sm max-w-[150px] truncate" title={item.assigned_to}>{item.assigned_to || "—"}</TableCell>
                 <TableCell className="hidden xl:table-cell font-mono text-xs">{item.username || "—"}</TableCell>
-                <TableCell className="hidden xl:table-cell text-sm">{item.department || "—"}</TableCell>
-                <TableCell className="hidden lg:table-cell text-sm">{item.delivery_date || "—"}</TableCell>
+                <TableCell className="hidden xl:table-cell text-sm max-w-[120px] truncate" title={item.department}>{item.department || "—"}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className={status.className}>
                     {status.label}
