@@ -1,0 +1,67 @@
+{
+  "name": "OcsSyncLog",
+  "type": "object",
+  "properties": {
+    "started_at": {
+      "type": "string",
+      "description": "Fecha/hora de inicio de la sincronizaci\u00f3n"
+    },
+    "finished_at": {
+      "type": "string",
+      "description": "Fecha/hora de fin"
+    },
+    "total_ids": {
+      "type": "number",
+      "description": "Total de IDs obtenidos de OCS"
+    },
+    "skipped_outdated": {
+      "type": "number",
+      "description": "Omitidos por tener \u00faltimo inventario > 20 d\u00edas"
+    },
+    "processed": {
+      "type": "number",
+      "description": "Equipos procesados activamente"
+    },
+    "created": {
+      "type": "number",
+      "description": "Equipos nuevos creados"
+    },
+    "updated": {
+      "type": "number",
+      "description": "Equipos actualizados"
+    },
+    "no_changes": {
+      "type": "number",
+      "description": "Equipos sin cambios"
+    },
+    "deduplicated": {
+      "type": "number",
+      "description": "Duplicados ignorados"
+    },
+    "marked_outdated": {
+      "type": "number",
+      "description": "Equipos marcados como desactualizados"
+    },
+    "errors": {
+      "type": "number",
+      "description": "Cantidad de errores"
+    },
+    "error_details": {
+      "type": "string",
+      "description": "Detalle de errores (JSON)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ],
+      "default": "running"
+    }
+  },
+  "required": [
+    "started_at",
+    "status"
+  ]
+}

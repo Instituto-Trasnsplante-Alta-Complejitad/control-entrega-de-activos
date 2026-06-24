@@ -1,0 +1,43 @@
+{
+  "name": "EquipmentChangeLog",
+  "type": "object",
+  "properties": {
+    "equipment_id": {
+      "type": "string",
+      "description": "ID del equipo modificado"
+    },
+    "asset_number": {
+      "type": "string",
+      "description": "N\u00famero de activo del equipo"
+    },
+    "field_name": {
+      "type": "string",
+      "description": "Campo que fue modificado"
+    },
+    "old_value": {
+      "type": "string",
+      "description": "Valor anterior"
+    },
+    "new_value": {
+      "type": "string",
+      "description": "Valor nuevo"
+    },
+    "source": {
+      "type": "string",
+      "description": "Fuente del cambio (OCS Inventory, Manual, etc.)"
+    },
+    "ocs_lastdate": {
+      "type": "string",
+      "description": "Fecha del inventario OCS que origin\u00f3 el cambio"
+    },
+    "ticket_id": {
+      "type": "string",
+      "description": "Ticket asociado (opcional)"
+    }
+  },
+  "required": [
+    "equipment_id",
+    "field_name",
+    "source"
+  ]
+}

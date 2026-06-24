@@ -129,6 +129,23 @@
     "operating_system": {
       "type": "string",
       "description": "Sistema operativo instalado"
+    },
+    "ocs_id": {
+      "type": "number",
+      "description": "ID interno de OCS Inventory"
+    },
+    "ocs_lastdate": {
+      "type": "string",
+      "description": "Fecha del \u00faltimo inventario OCS"
+    },
+    "ocs_is_outdated": {
+      "type": "boolean",
+      "default": false,
+      "description": "True si no tuvo reporte OCS en los \u00faltimos 20 d\u00edas"
+    },
+    "ocs_days_without_report": {
+      "type": "number",
+      "description": "D\u00edas desde el \u00faltimo reporte OCS"
     }
   },
   "required": [
