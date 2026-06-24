@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, FileText, Printer, Package } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, FileText, Printer, Package, History } from "lucide-react";
 
 const navItems = [
   { label: "Inicio", path: "/", icon: LayoutDashboard },
   { label: "Equipos", path: "/stock", icon: Monitor },
-  { label: "Impresoras", path: "/impresoras", icon: Printer },
-  { label: "Componentes", path: "/stock-componentes", icon: Package },
   { label: "Entregar", path: "/nueva-entrega", icon: PackagePlus },
+  { label: "Historial", path: "/historial", icon: History },
+  { label: "Contratos", path: "/contratos", icon: FileText },
 ];
 
 export default function MobileNav() {
