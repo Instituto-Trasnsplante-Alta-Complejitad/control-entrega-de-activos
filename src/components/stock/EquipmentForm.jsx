@@ -104,12 +104,13 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
   };
 
   const isCpu = form.type === "cpu";
+  const showHardwareSpecs = form.type === "cpu" || form.type === "notebook";
 
   const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className={isCpu ? "sm:max-w-2xl max-h-[90vh] overflow-y-auto" : "sm:max-w-lg"}>
+      <DialogContent className={showHardwareSpecs ? "sm:max-w-2xl max-h-[90vh] overflow-y-auto" : "sm:max-w-lg"}>
         <DialogHeader>
           <DialogTitle>{equipment ? "Editar Equipo" : "Nuevo Equipo"}</DialogTitle>
         </DialogHeader>
@@ -186,8 +187,9 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
             </div>
           </div>
 
-          {isCpu && (
+          {showHardwareSpecs && (
             <>
+              {isCpu && (
               <div className="border-t pt-4">
                 <h3 className="text-sm font-semibold mb-3">Periféricos</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -204,6 +206,7 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
                   ))}
                 </div>
               </div>
+              )}
 
               <div className="border-t pt-4">
                 <h3 className="text-sm font-semibold mb-3">Hardware</h3>
