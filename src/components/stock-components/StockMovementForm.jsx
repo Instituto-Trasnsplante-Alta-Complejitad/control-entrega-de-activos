@@ -57,12 +57,13 @@ export default function StockMovementForm({ open, item, initialType, onClose, on
         observaciones,
         referencia_tipo: "ajuste manual",
       });
-      toast({ title: "Movimiento registrado", description: `Stock actualizado: ${cantNueva}`, duration: 2000 });
-      onSuccess();
-    } catch {
-      toast({ title: "Error", description: "No se pudo registrar el movimiento", variant: "destructive", duration: 3000 });
-    } finally {
+      toast({ title: "Movimiento registrado", description: `Stock actualizado: ${cantNueva}`, duration: 1500 });
       setLoading(false);
+      onClose();
+      setTimeout(() => onSuccess(), 300);
+    } catch {
+      setLoading(false);
+      toast({ title: "Error", description: "No se pudo registrar el movimiento", variant: "destructive", duration: 3000 });
     }
   };
 
