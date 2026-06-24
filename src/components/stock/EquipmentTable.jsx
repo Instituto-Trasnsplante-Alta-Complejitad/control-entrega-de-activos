@@ -3,9 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QrCode } from "lucide-react";
+import { QrCode, Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Printer } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 const statusMap = {
   disponible: { label: "Disponible", className: "bg-green-100 text-green-700 border-green-200" },
@@ -147,17 +146,35 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
           </DialogHeader>
           {qrItem && (
             <div className="flex flex-col items-center gap-4 py-4">
-              <QRCodeSVG
-                value={`${window.location.origin}/equipo/${qrItem.id}`}
-                size={200}
-                level="M"
-              />
-              <p className="text-sm text-muted-foreground">
-                {qrItem.brand} {qrItem.model} — {qrItem.asset_number}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Escaneá para ver las especificaciones
-              </p>
+              <div id="qr-print-area" className="flex flex-col items-center gap-3 p-4">
+                <QRCodeSVG
+                  value={`${window.location.origin}/equipo/${qrItem.id}`}
+                  size={200}
+                  level="M"
+                />
+                <p className="text-sm font-semibold">{qrItem.asset_number}</p>
+                <p className="text-xs text-muted-foreground">{qrItem.brand} {safeVal(qrItem.model, 30)}</p>
+              </div>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  const printWin = window.open("", "_blank", "width=400,height=500");
+                  const url = `${window.location.origin}/equipo/${qrItem.id}`;
+                  printWin.document.write(`
+                    <html><head><title>QR ${qrItem.asset_number}</title>
+                    <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;gap:12px;}p{margin:0;}canvas,svg{display:block;}</style>
+                    </head><body>
+                    ${document.getElementById("qr-print-area").innerHTML}
+                    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
+                    <script>window.onload=()=>{document.querySelectorAll("svg").forEach(el=>el.remove());const c=document.createElement("canvas");document.body.prepend(c);QRCode.toCanvas(c,"${url}",{width:200},()=>{window.print();window.close();});}<\/script>
+                    </body></html>
+                  `);
+                  printWin.document.close();
+                }}
+              >
+                <Printer className="w-4 h-4" /> Imprimir QR
+              </Button>
             </div>
           )}
         </DialogContent>

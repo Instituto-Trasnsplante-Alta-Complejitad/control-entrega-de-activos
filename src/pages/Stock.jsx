@@ -4,16 +4,14 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Download, Upload } from "lucide-react";
+import { Plus, Search, Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import EquipmentTable from "@/components/stock/EquipmentTable";
 import EquipmentForm from "@/components/stock/EquipmentForm";
-import OcsImportDialog from "@/components/stock/OcsImportDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Stock() {
   const [showForm, setShowForm] = useState(false);
-  const [showOcsImport, setShowOcsImport] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [search, setSearch] = useState("");
@@ -111,9 +109,6 @@ export default function Stock() {
           <Button variant="outline" onClick={handleExportExcel} className="gap-2">
             <Download className="w-4 h-4" /> Exportar Excel
           </Button>
-          <Button variant="outline" onClick={() => setShowOcsImport(true)} className="gap-2">
-            <Upload className="w-4 h-4" /> Importar OCS
-          </Button>
           <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2">
             <Plus className="w-4 h-4" /> Nuevo Equipo
           </Button>
@@ -180,12 +175,6 @@ export default function Stock() {
         onClose={() => { setShowForm(false); setEditing(null); }}
         onSubmit={handleSubmit}
         equipment={editing}
-      />
-
-      <OcsImportDialog
-        open={showOcsImport}
-        onClose={() => setShowOcsImport(false)}
-        onDone={() => queryClient.invalidateQueries({ queryKey: ["equipment"] })}
       />
 
       <AlertDialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
