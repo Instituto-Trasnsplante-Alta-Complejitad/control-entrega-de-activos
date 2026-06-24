@@ -45,7 +45,12 @@ function safeVal(str, max = 30) {
   return truncate(str, max);
 }
 
-export default function EquipmentTable({ equipment, onEdit, onDelete }) {
+const SPEC_LABELS = {
+  ram_amount: "RAM",
+  storage_capacity: "Almacenamiento",
+};
+
+export default function EquipmentTable({ equipment, onEdit, onDelete, highlightSpec }) {
   const [sortField, setSortField] = useState("asset_number");
   const [sortDir, setSortDir] = useState("asc");
   const [qrItem, setQrItem] = useState(null);
@@ -91,6 +96,9 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
             {th("Apellido y Nombre", "assigned_to", "hidden lg:table-cell max-w-[150px]")}
             {th("Usuario", "username", "hidden xl:table-cell w-24")}
             {th("Sector", "department", "hidden xl:table-cell max-w-[120px]")}
+            {highlightSpec && (
+              <TableHead className="font-semibold w-24 text-primary">{SPEC_LABELS[highlightSpec] || highlightSpec}</TableHead>
+            )}
             {th("Estado", "status", "w-28")}
             <TableHead className="font-semibold text-right w-24">Acciones</TableHead>
           </TableRow>
@@ -108,6 +116,11 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
                 <TableCell className="hidden lg:table-cell text-sm max-w-[150px] truncate" title={item.assigned_to}>{item.assigned_to || "—"}</TableCell>
                 <TableCell className="hidden xl:table-cell font-mono text-xs">{item.username || "—"}</TableCell>
                 <TableCell className="hidden xl:table-cell text-sm max-w-[120px] truncate" title={item.department}>{item.department || "—"}</TableCell>
+                {highlightSpec && (
+                  <TableCell className="font-semibold text-sm text-primary">
+                    {item[highlightSpec] || "—"}
+                  </TableCell>
+                )}
                 <TableCell>
                   <Badge variant="outline" className={status.className}>
                     {status.label}
@@ -131,7 +144,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete }) {
           })}
           {sorted.length === 0 && (
             <TableRow>
-              <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+              <TableCell colSpan={highlightSpec ? 11 : 10} className="text-center py-12 text-muted-foreground">
                 No hay equipos registrados
               </TableCell>
             </TableRow>

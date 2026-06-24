@@ -8,6 +8,7 @@ import { Plus, Search, Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import EquipmentTable from "@/components/stock/EquipmentTable";
 import EquipmentForm from "@/components/stock/EquipmentForm";
+import HardwareFilterPanel from "@/components/stock/HardwareFilterPanel";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Stock() {
@@ -19,6 +20,8 @@ export default function Stock() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [userSearch, setUserSearch] = useState("");
+  const [hardwareFiltered, setHardwareFiltered] = useState(null); // null = no active hw filter
+  const [hwSpecField, setHwSpecField] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -60,7 +63,7 @@ export default function Stock() {
     }
   };
 
-  const filtered = equipment.filter((item) => {
+  const baseFiltered = equipment.filter((item) => {
     const matchSearch = !search || 
       item.asset_number?.toLowerCase().includes(search.toLowerCase()) ||
       item.brand?.toLowerCase().includes(search.toLowerCase()) ||
@@ -75,6 +78,11 @@ export default function Stock() {
       item.username?.toLowerCase().includes(userSearch.toLowerCase());
     return matchSearch && matchType && matchStatus && matchDepartment && matchUser;
   });
+
+  // Si hay filtro de hardware activo, aplicarlo sobre baseFiltered
+  const filtered = hardwareFiltered
+    ? hardwareFiltered.filter((item) => baseFiltered.some((b) => b.id === item.id))
+    : baseFiltered;
 
   const departments = [...new Set(equipment.map((e) => e.department).filter(Boolean))].sort();
 
@@ -126,6 +134,10 @@ export default function Stock() {
             <Input placeholder="Buscar usuario..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className="pl-9" />
           </div>
         </div>
+        <HardwareFilterPanel
+          equipment={baseFiltered}
+          onFilteredChange={(result, field) => { setHardwareFiltered(result); setHwSpecField(field); }}
+        />
         <div className="flex flex-col sm:flex-row gap-3">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Tipo" /></SelectTrigger>
@@ -167,6 +179,7 @@ export default function Stock() {
           equipment={filtered}
           onEdit={(item) => { setEditing(item); setShowForm(true); }}
           onDelete={(item) => setDeleting(item)}
+          highlightSpec={hwSpecField}
         />
       )}
 
