@@ -76,8 +76,17 @@ export default function StockMovementForm({ open, item, initialType, onClose, on
     baja: "Dar de baja",
   };
 
+  const handleClose = () => {
+    setTipo(initialType || "entrada");
+    setCantidad(1);
+    setMotivo("");
+    setObservaciones("");
+    setUsuario("");
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Movimiento de Stock</DialogTitle>
