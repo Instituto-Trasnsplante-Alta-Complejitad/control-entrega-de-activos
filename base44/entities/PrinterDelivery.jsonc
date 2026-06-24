@@ -1,0 +1,89 @@
+{
+  "name": "PrinterDelivery",
+  "type": "object",
+  "properties": {
+    "printer_id_ref": {
+      "type": "string",
+      "description": "ID del registro Printer"
+    },
+    "printer_asset_id": {
+      "type": "string",
+      "description": "ID de activo de la impresora (ej: AR2150P001)"
+    },
+    "printer_marca": {
+      "type": "string"
+    },
+    "printer_modelo": {
+      "type": "string"
+    },
+    "printer_piso": {
+      "type": "string"
+    },
+    "printer_sector": {
+      "type": "string"
+    },
+    "printer_edificio": {
+      "type": "string"
+    },
+    "printer_conexion": {
+      "type": "string"
+    },
+    "toner_codigo": {
+      "type": "string"
+    },
+    "toner_cantidad_solicitada": {
+      "type": "number",
+      "default": 0
+    },
+    "toner_cantidad_entregada": {
+      "type": "number",
+      "default": 0
+    },
+    "toner_stock_id": {
+      "type": "string"
+    },
+    "unidad_imagen_codigo": {
+      "type": "string"
+    },
+    "unidad_imagen_cantidad_solicitada": {
+      "type": "number",
+      "default": 0
+    },
+    "unidad_imagen_cantidad_entregada": {
+      "type": "number",
+      "default": 0
+    },
+    "unidad_imagen_stock_id": {
+      "type": "string"
+    },
+    "receptor_nombre": {
+      "type": "string"
+    },
+    "receptor_sector": {
+      "type": "string"
+    },
+    "fecha_entrega": {
+      "type": "string",
+      "format": "date"
+    },
+    "usuario_responsable": {
+      "type": "string"
+    },
+    "observaciones": {
+      "type": "string"
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "pendiente",
+        "completada",
+        "anulada"
+      ],
+      "default": "pendiente"
+    }
+  },
+  "required": [
+    "printer_id_ref",
+    "fecha_entrega"
+  ]
+}

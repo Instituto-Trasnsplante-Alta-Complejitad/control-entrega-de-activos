@@ -17,6 +17,8 @@ import NewDelivery from '@/pages/NewDelivery';
 import AcceptDelivery from '@/pages/AcceptDelivery';
 import Contracts from '@/pages/Contracts';
 import EquipmentDetail from '@/pages/EquipmentDetail';
+import Printers from '@/pages/Printers';
+import ComponentStockPage from '@/pages/ComponentStockPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -50,6 +52,8 @@ const AuthenticatedApp = () => {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/stock" element={<Stock />} />
+          <Route path="/impresoras" element={<Printers />} />
+          <Route path="/stock-componentes" element={<ComponentStockPage />} />
           <Route path="/nueva-entrega" element={<NewDelivery />} />
           <Route path="/contratos" element={<Contracts />} />
         </Route>

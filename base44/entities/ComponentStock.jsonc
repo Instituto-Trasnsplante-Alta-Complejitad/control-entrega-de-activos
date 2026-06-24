@@ -1,0 +1,79 @@
+{
+  "name": "ComponentStock",
+  "type": "object",
+  "properties": {
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "PC",
+        "Impresora"
+      ],
+      "description": "Categor\u00eda del \u00edtem"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "RAM",
+        "HDD",
+        "SSD",
+        "NVMe",
+        "Fuente",
+        "Toner",
+        "Unidad de imagen",
+        "Tambor",
+        "Otro"
+      ],
+      "description": "Tipo de componente o suministro"
+    },
+    "codigo": {
+      "type": "string",
+      "description": "C\u00f3digo del \u00edtem (ej: LBTN880/3479)"
+    },
+    "marca": {
+      "type": "string"
+    },
+    "modelo": {
+      "type": "string"
+    },
+    "capacidad": {
+      "type": "string",
+      "description": "Capacidad si aplica (ej: 16 GB, 512 GB)"
+    },
+    "compatibilidad": {
+      "type": "string",
+      "description": "Modelos o equipos compatibles"
+    },
+    "cantidad_actual": {
+      "type": "number",
+      "default": 0
+    },
+    "cantidad_minima": {
+      "type": "number",
+      "default": 1,
+      "description": "Stock m\u00ednimo para alerta"
+    },
+    "proveedor": {
+      "type": "string"
+    },
+    "ubicacion": {
+      "type": "string"
+    },
+    "notas": {
+      "type": "string"
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "disponible",
+        "reservado",
+        "baja"
+      ],
+      "default": "disponible"
+    }
+  },
+  "required": [
+    "categoria",
+    "tipo",
+    "codigo"
+  ]
+}
