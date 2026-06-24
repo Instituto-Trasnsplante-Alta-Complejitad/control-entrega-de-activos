@@ -56,6 +56,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
   const [qrItem, setQrItem] = useState(null);
 
   const handleSort = (field) => {
+    if (highlightSpec) return; // cuando hay filtro hardware activo, no permitir re-orden
     if (sortField === field) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -64,12 +65,15 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
     }
   };
 
-  const sorted = [...equipment].sort((a, b) => {
-    const valA = a[sortField] ?? "";
-    const valB = b[sortField] ?? "";
-    const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
-    return sortDir === "asc" ? cmp : -cmp;
-  });
+  // Si hay highlightSpec activo, respetar el orden que viene del panel
+  const sorted = highlightSpec
+    ? [...equipment]
+    : [...equipment].sort((a, b) => {
+        const valA = a[sortField] ?? "";
+        const valB = b[sortField] ?? "";
+        const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+        return sortDir === "asc" ? cmp : -cmp;
+      });
 
   const th = (label, field, className = "") => (
     <TableHead
