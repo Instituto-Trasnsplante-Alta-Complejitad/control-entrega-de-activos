@@ -17,6 +17,10 @@
       ],
       "description": "Tipo de equipo"
     },
+    "subtype": {
+      "type": "string",
+      "description": "Subtipo del equipo (ej: scanner, ups, switch)"
+    },
     "brand": {
       "type": "string",
       "description": "Marca del equipo"
