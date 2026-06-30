@@ -18,7 +18,7 @@ import AcceptDelivery from '@/pages/AcceptDelivery';
 import Contracts from '@/pages/Contracts';
 import EquipmentDetail from '@/pages/EquipmentDetail';
 import Printers from '@/pages/Printers';
-import AuditPage from '@/pages/AuditPage';
+
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -55,7 +55,6 @@ const AuthenticatedApp = () => {
           <Route path="/impresoras" element={<Printers />} />
           <Route path="/nueva-entrega" element={<NewDelivery />} />
           <Route path="/contratos" element={<Contracts />} />
-          <Route path="/auditoria" element={<AuditPage />} />
           <Route path="/stock-componentes" element={<Navigate to="/" replace />} />
           <Route path="/historial" element={<Navigate to="/" replace />} />
         </Route>

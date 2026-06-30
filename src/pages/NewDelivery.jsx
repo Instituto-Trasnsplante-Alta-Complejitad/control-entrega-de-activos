@@ -14,7 +14,6 @@ export default function NewDelivery() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
 
   const [form, setForm] = useState({
     recipient_name: "",
@@ -31,8 +30,7 @@ export default function NewDelivery() {
     queryFn: () => base44.entities.Equipment.list("-created_date", 500),
   });
 
-  const availableEquipment = equipment.filter((e) => e.status === "disponible");
-  const filteredEquipment = availableEquipment.filter((e) => !typeFilter || typeFilter === "todos" || e.type === typeFilter);
+  const filteredEquipment = equipment.filter((e) => e.status === "disponible" && e.type === "notebook");
   const selectedEquipment = equipment.find((e) => e.id === selectedEquipmentId);
 
   const handleSubmit = async (e) => {
@@ -69,35 +67,23 @@ export default function NewDelivery() {
       delivery_date: format(new Date(), "yyyy-MM-dd"),
     });
     setSelectedEquipmentId("");
-    setTypeFilter("");
   };
 
   return (
     <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Nueva Entrega</h1>
-        <p className="text-sm text-muted-foreground mt-1">Registrá la entrega de un equipo a un usuario</p>
+        <p className="text-sm text-muted-foreground mt-1">Registrá la entrega de una laptop a un usuario</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Equipo a entregar</CardTitle>
+            <CardTitle className="text-base">Laptop a entregar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setSelectedEquipmentId(""); }}>
-              <SelectTrigger><SelectValue placeholder="Filtrar por tipo de equipo..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los tipos</SelectItem>
-                <SelectItem value="notebook">Notebook</SelectItem>
-                <SelectItem value="tablet">Tablet</SelectItem>
-                <SelectItem value="celular">Celular</SelectItem>
-                <SelectItem value="cpu">CPU</SelectItem>
-                <SelectItem value="otro">Otro</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={selectedEquipmentId} onValueChange={setSelectedEquipmentId}>
-              <SelectTrigger><SelectValue placeholder="Seleccionar equipo disponible..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Seleccionar notebook disponible..." /></SelectTrigger>
               <SelectContent>
                 {filteredEquipment.map((eq) => (
                   <SelectItem key={eq.id} value={eq.id}>

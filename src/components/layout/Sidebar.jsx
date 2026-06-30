@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const navItems = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -14,7 +13,6 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation();
-  const { isAdmin } = useCurrentUser();
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-border min-h-screen p-4">
@@ -45,20 +43,6 @@ export default function Sidebar() {
 
         })}
       </nav>
-
-      {isAdmin && (
-        <Link
-          to="/auditoria"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 mt-1 ${
-            location.pathname === "/auditoria"
-              ? "bg-[#E8896A] text-white shadow-sm"
-              : "text-muted-foreground hover:bg-orange-50 hover:text-foreground"
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          Auditoría
-        </Link>
-      )}
 
       <button
         onClick={() => base44.auth.logout()}
