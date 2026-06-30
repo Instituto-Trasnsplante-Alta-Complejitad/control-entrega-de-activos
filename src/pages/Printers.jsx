@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Search, Pencil, Trash2, QrCode, Printer as PrinterIcon } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import PrinterForm from "@/components/printers/PrinterForm";
@@ -26,6 +27,7 @@ export default function Printers() {
   const [qrPrinter, setQrPrinter] = useState(null);
   const [search, setSearch] = useState("");
   const [edificioFilter, setEdificioFilter] = useState("all");
+  const { user, canEdit, canDelete } = useCurrentUser();
   const queryClient = useQueryClient();
 
   const { data: printers = [], isLoading } = useQuery({
@@ -44,7 +46,20 @@ export default function Printers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Printer.delete(id),
+    mutationFn: async (printer) => {
+      await base44.entities.Printer.update(printer.id, { estado: "baja" });
+      await base44.entities.AuditLog.create({
+        usuario_email: user?.email || "desconocido",
+        usuario_nombre: user?.full_name || "",
+        accion: "baja",
+        entidad: "Printer",
+        entidad_id: printer.id,
+        entidad_label: printer.printer_id,
+        valor_anterior: printer.estado,
+        valor_nuevo: "baja",
+        fecha: new Date().toISOString(),
+      }).catch(() => {});
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["printers"] }); setDeleting(null); },
   });
 
@@ -71,9 +86,11 @@ export default function Printers() {
           <h1 className="text-2xl font-bold">Impresoras</h1>
           <p className="text-sm text-muted-foreground mt-1">{filtered.length} de {printers.length} impresoras</p>
         </div>
-        <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 self-start">
-          <Plus className="w-4 h-4" /> Nueva Impresora
-        </Button>
+        {canEdit && (
+          <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 self-start">
+            <Plus className="w-4 h-4" /> Nueva Impresora
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -134,12 +151,16 @@ export default function Printers() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" title="QR" onClick={() => setQrPrinter(p)}>
                           <QrCode className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(p); setShowForm(true); }}>
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(p)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(p); setShowForm(true); }}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(p)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -155,12 +176,14 @@ export default function Printers() {
         </div>
       )}
 
-      <PrinterForm
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditing(null); }}
-        onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)}
-        printer={editing}
-      />
+      {canEdit && (
+        <PrinterForm
+          open={showForm}
+          onClose={() => { setShowForm(false); setEditing(null); }}
+          onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)}
+          printer={editing}
+        />
+      )}
 
       {/* QR Dialog */}
       <Dialog open={!!qrPrinter} onOpenChange={() => setQrPrinter(null)}>
@@ -231,15 +254,15 @@ export default function Printers() {
       <AlertDialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar impresora?</AlertDialogTitle>
+            <AlertDialogTitle>¿Dar de baja esta impresora?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará {deleting?.marca} {deleting?.modelo} ({deleting?.printer_id}). Esta acción no se puede deshacer.
+              La impresora {deleting?.marca} {deleting?.modelo} ({deleting?.printer_id}) pasará al estado "Baja". El registro se conservará.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Eliminar
+            <AlertDialogAction onClick={() => deleteMutation.mutate(deleting)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Dar de baja
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +15,7 @@ import StockMovementForm from "@/components/stock-components/StockMovementForm";
 import StockMovementHistory from "@/components/stock-components/StockMovementHistory";
 
 export default function ComponentStockPage() {
+  const { user, canEdit, canDelete, canAdjustStock } = useCurrentUser();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -43,7 +45,20 @@ export default function ComponentStockPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ComponentStock.delete(id),
+    mutationFn: async (item) => {
+      await base44.entities.ComponentStock.update(item.id, { estado: "baja" });
+      await base44.entities.AuditLog.create({
+        usuario_email: user?.email || "desconocido",
+        usuario_nombre: user?.full_name || "",
+        accion: "baja",
+        entidad: "ComponentStock",
+        entidad_id: item.id,
+        entidad_label: item.codigo,
+        valor_anterior: item.estado,
+        valor_nuevo: "baja",
+        fecha: new Date().toISOString(),
+      }).catch(() => {});
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["component-stock"] }); setDeleting(null); },
   });
 
@@ -109,21 +124,29 @@ export default function ComponentStockPage() {
                 <TableCell className="hidden md:table-cell text-sm">{item.proveedor || "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700" title="Entrada" onClick={() => { setMovementItem(item); setMovementType("entrada"); }}>
-                      <ArrowUpCircle className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Salida" onClick={() => { setMovementItem(item); setMovementType("salida"); }}>
-                      <ArrowDownCircle className="w-3.5 h-3.5" />
-                    </Button>
+                    {canAdjustStock && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700" title="Entrada" onClick={() => { setMovementItem(item); setMovementType("entrada"); }}>
+                          <ArrowUpCircle className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Salida" onClick={() => { setMovementItem(item); setMovementType("salida"); }}>
+                          <ArrowDownCircle className="w-3.5 h-3.5" />
+                        </Button>
+                      </>
+                    )}
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="Historial" onClick={() => setHistoryItem(item)}>
                       <History className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(item); setShowForm(true); }}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(item)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(item); setShowForm(true); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(item)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -151,9 +174,11 @@ export default function ComponentStockPage() {
             )}
           </p>
         </div>
-        <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 self-start">
-          <Plus className="w-4 h-4" /> Nuevo Ítem
-        </Button>
+        {canEdit && (
+          <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 self-start">
+            <Plus className="w-4 h-4" /> Nuevo Ítem
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
@@ -202,14 +227,16 @@ export default function ComponentStockPage() {
         </Tabs>
       )}
 
-      <ComponentStockForm
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditing(null); }}
-        onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)}
-        item={editing}
-      />
+      {canEdit && (
+        <ComponentStockForm
+          open={showForm}
+          onClose={() => { setShowForm(false); setEditing(null); }}
+          onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)}
+          item={editing}
+        />
+      )}
 
-      {movementItem && (
+      {canAdjustStock && movementItem && (
         <StockMovementForm
           open={!!movementItem}
           item={movementItem}
@@ -230,15 +257,15 @@ export default function ComponentStockPage() {
       <AlertDialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar ítem?</AlertDialogTitle>
+            <AlertDialogTitle>¿Dar de baja este ítem?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará {deleting?.codigo} ({deleting?.tipo}). Esta acción no se puede deshacer.
+              El ítem {deleting?.codigo} ({deleting?.tipo}) pasará al estado "Baja". El registro se conservará en el historial.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Eliminar
+            <AlertDialogAction onClick={() => deleteMutation.mutate(deleting)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Dar de baja
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

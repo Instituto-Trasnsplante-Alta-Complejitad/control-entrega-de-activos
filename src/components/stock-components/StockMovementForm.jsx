@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function StockMovementForm({ open, item, initialType, onClose, onSuccess }) {
   const { toast } = useToast();
+  const { user, canAdjustStock } = useCurrentUser();
   const [tipo, setTipo] = useState(initialType || "entrada");
   const [cantidad, setCantidad] = useState(1);
   const [motivo, setMotivo] = useState("");
@@ -21,6 +23,10 @@ export default function StockMovementForm({ open, item, initialType, onClose, on
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canAdjustStock) {
+      toast({ title: "Sin permisos", description: "No tenés permisos para realizar esta acción.", variant: "destructive", duration: 3000 });
+      return;
+    }
     const cant = Number(cantidad);
     if (!cant || cant <= 0) {
       toast({ title: "Error", description: "La cantidad debe ser mayor a 0", variant: "destructive", duration: 2000 });
@@ -52,11 +58,24 @@ export default function StockMovementForm({ open, item, initialType, onClose, on
         cantidad_anterior: cantActual,
         cantidad_nueva: cantNueva,
         motivo,
-        usuario_responsable: usuario,
+        usuario_responsable: usuario || user?.full_name || "",
         fecha: format(new Date(), "yyyy-MM-dd"),
         observaciones,
         referencia_tipo: "ajuste manual",
       });
+      // Auditoría
+      await base44.entities.AuditLog.create({
+        usuario_email: user?.email || "desconocido",
+        usuario_nombre: user?.full_name || "",
+        accion: "ajuste_stock",
+        entidad: "ComponentStock",
+        entidad_id: item.id,
+        entidad_label: item.codigo,
+        valor_anterior: String(cantActual),
+        valor_nuevo: String(cantNueva),
+        observacion: `${tipo} · motivo: ${motivo || "—"}`,
+        fecha: new Date().toISOString(),
+      }).catch(() => {});
       toast({ title: "Movimiento registrado", description: `Stock actualizado: ${cantNueva}`, duration: 1500 });
       setLoading(false);
       onClose();

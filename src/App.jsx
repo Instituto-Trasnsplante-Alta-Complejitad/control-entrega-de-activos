@@ -20,6 +20,7 @@ import EquipmentDetail from '@/pages/EquipmentDetail';
 import Printers from '@/pages/Printers';
 import ComponentStockPage from '@/pages/ComponentStockPage';
 import SupplyHistory from '@/pages/SupplyHistory';
+import AuditPage from '@/pages/AuditPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
           <Route path="/nueva-entrega" element={<NewDelivery />} />
           <Route path="/contratos" element={<Contracts />} />
           <Route path="/historial" element={<SupplyHistory />} />
+          <Route path="/auditoria" element={<AuditPage />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

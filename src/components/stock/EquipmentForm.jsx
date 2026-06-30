@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,7 +63,26 @@ const INITIAL_FORM = {
   operating_system: "",
 };
 
+async function logAudit({ user, accion, entidad_id, entidad_label, valor_anterior, valor_nuevo }) {
+  try {
+    await base44.entities.AuditLog.create({
+      usuario_email: user?.email || "desconocido",
+      usuario_nombre: user?.full_name || "",
+      accion,
+      entidad: "Equipment",
+      entidad_id,
+      entidad_label,
+      valor_anterior: valor_anterior ? JSON.stringify(valor_anterior) : undefined,
+      valor_nuevo: valor_nuevo ? JSON.stringify(valor_nuevo) : undefined,
+      fecha: new Date().toISOString(),
+    });
+  } catch {
+    // auditoría no bloqueante
+  }
+}
+
 export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
+  const { user, canEdit } = useCurrentUser();
   const [form, setForm] = useState(INITIAL_FORM);
 
   useEffect(() => {
@@ -100,6 +121,25 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!canEdit) return;
+    // Auditoría
+    if (equipment) {
+      logAudit({
+        user,
+        accion: "editar",
+        entidad_id: equipment.id,
+        entidad_label: equipment.asset_number,
+        valor_anterior: equipment,
+        valor_nuevo: form,
+      });
+    } else {
+      logAudit({
+        user,
+        accion: "crear",
+        entidad_label: form.asset_number,
+        valor_nuevo: form,
+      });
+    }
     onSubmit(form);
   };
 

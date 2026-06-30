@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ const SPEC_LABELS = {
 };
 
 export default function EquipmentTable({ equipment, onEdit, onDelete, highlightSpec }) {
+  const { canEdit, canDelete } = useCurrentUser();
   const [sortField, setSortField] = useState("asset_number");
   const [sortDir, setSortDir] = useState("asc");
   const [qrItem, setQrItem] = useState(null);
@@ -135,12 +137,16 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQrItem(item)} title="QR">
                       <QrCode className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(item)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    {canEdit && onEdit && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {canDelete && onDelete && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(item)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

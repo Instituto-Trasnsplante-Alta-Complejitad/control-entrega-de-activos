@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Download } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import * as XLSX from "xlsx";
 import EquipmentTable from "@/components/stock/EquipmentTable";
 import EquipmentForm from "@/components/stock/EquipmentForm";
@@ -12,6 +13,7 @@ import HardwareFilterPanel from "@/components/stock/HardwareFilterPanel";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Stock() {
+  const { user, canEdit, canDelete } = useCurrentUser();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -39,7 +41,20 @@ export default function Stock() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Equipment.update(id, data),
+    mutationFn: async ({ id, data, prev }) => {
+      await base44.entities.Equipment.update(id, data);
+      await base44.entities.AuditLog.create({
+        usuario_email: user?.email || "desconocido",
+        usuario_nombre: user?.full_name || "",
+        accion: "editar",
+        entidad: "Equipment",
+        entidad_id: id,
+        entidad_label: data.asset_number || prev?.asset_number,
+        valor_anterior: prev ? JSON.stringify(prev) : undefined,
+        valor_nuevo: JSON.stringify(data),
+        fecha: new Date().toISOString(),
+      }).catch(() => {});
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["equipment"] });
       setShowForm(false);
@@ -48,7 +63,20 @@ export default function Stock() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Equipment.delete(id),
+    mutationFn: async (item) => {
+      await base44.entities.Equipment.update(item.id, { status: "baja" });
+      await base44.entities.AuditLog.create({
+        usuario_email: user?.email || "desconocido",
+        usuario_nombre: user?.full_name || "",
+        accion: "baja",
+        entidad: "Equipment",
+        entidad_id: item.id,
+        entidad_label: item.asset_number,
+        valor_anterior: item.status,
+        valor_nuevo: "baja",
+        fecha: new Date().toISOString(),
+      }).catch(() => {});
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["equipment"] });
       setDeleting(null);
@@ -57,7 +85,7 @@ export default function Stock() {
 
   const handleSubmit = (formData) => {
     if (editing) {
-      updateMutation.mutate({ id: editing.id, data: formData });
+      updateMutation.mutate({ id: editing.id, data: formData, prev: editing });
     } else {
       createMutation.mutate(formData);
     }
@@ -117,9 +145,11 @@ export default function Stock() {
           <Button variant="outline" onClick={handleExportExcel} className="gap-2">
             <Download className="w-4 h-4" /> Exportar Excel
           </Button>
-          <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2">
-            <Plus className="w-4 h-4" /> Nuevo Equipo
-          </Button>
+          {canEdit && (
+            <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2">
+              <Plus className="w-4 h-4" /> Nuevo Equipo
+            </Button>
+          )}
         </div>
       </div>
 
@@ -177,31 +207,33 @@ export default function Stock() {
       ) : (
         <EquipmentTable
           equipment={filtered}
-          onEdit={(item) => { setEditing(item); setShowForm(true); }}
-          onDelete={(item) => setDeleting(item)}
+          onEdit={canEdit ? (item) => { setEditing(item); setShowForm(true); } : null}
+          onDelete={canDelete ? (item) => setDeleting(item) : null}
           highlightSpec={hwSpecField}
         />
       )}
 
-      <EquipmentForm
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditing(null); }}
-        onSubmit={handleSubmit}
-        equipment={editing}
-      />
+      {canEdit && (
+        <EquipmentForm
+          open={showForm}
+          onClose={() => { setShowForm(false); setEditing(null); }}
+          onSubmit={handleSubmit}
+          equipment={editing}
+        />
+      )}
 
       <AlertDialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar equipo?</AlertDialogTitle>
+            <AlertDialogTitle>¿Dar de baja este equipo?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará {deleting?.brand} {deleting?.model} ({deleting?.asset_number}). Esta acción no se puede deshacer.
+              El equipo {deleting?.brand} {deleting?.model} ({deleting?.asset_number}) pasará al estado "Baja". El registro se conservará en el historial.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Eliminar
+            <AlertDialogAction onClick={() => deleteMutation.mutate(deleting)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Dar de baja
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
