@@ -1,16 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const OCS_BASE = Deno.env.get("OCS_API_URL") || "http://inventario.ad.itac.com.ar/ocsapi/v1";
-const OCS_USER = Deno.env.get("OCS_API_USER") || "";
-const OCS_PASS = Deno.env.get("OCS_API_PASS") || "";
 const TIMEOUT_MS = 15000;
 
 function authHeaders() {
-  const headers = { "Content-Type": "application/json", "Accept": "application/json" };
-  if (OCS_USER && OCS_PASS) {
-    headers["Authorization"] = "Basic " + btoa(`${OCS_USER}:${OCS_PASS}`);
-  }
-  return headers;
+  return { "Content-Type": "application/json", "Accept": "application/json" };
 }
 
 async function ocsGet(path) {
