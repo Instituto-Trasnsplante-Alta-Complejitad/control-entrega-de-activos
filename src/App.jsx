@@ -18,8 +18,6 @@ import AcceptDelivery from '@/pages/AcceptDelivery';
 import Contracts from '@/pages/Contracts';
 import EquipmentDetail from '@/pages/EquipmentDetail';
 import Printers from '@/pages/Printers';
-import ComponentStockPage from '@/pages/ComponentStockPage';
-import SupplyHistory from '@/pages/SupplyHistory';
 import AuditPage from '@/pages/AuditPage';
 
 const AuthenticatedApp = () => {
@@ -55,11 +53,11 @@ const AuthenticatedApp = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/stock" element={<Stock />} />
           <Route path="/impresoras" element={<Printers />} />
-          <Route path="/stock-componentes" element={<ComponentStockPage />} />
           <Route path="/nueva-entrega" element={<NewDelivery />} />
           <Route path="/contratos" element={<Contracts />} />
-          <Route path="/historial" element={<SupplyHistory />} />
           <Route path="/auditoria" element={<AuditPage />} />
+          <Route path="/stock-componentes" element={<Navigate to="/" replace />} />
+          <Route path="/historial" element={<Navigate to="/" replace />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

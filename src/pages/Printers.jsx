@@ -123,8 +123,6 @@ export default function Printers() {
                 <TableHead className="font-semibold hidden md:table-cell">Sector</TableHead>
                 <TableHead className="font-semibold hidden lg:table-cell">Edificio</TableHead>
                 <TableHead className="font-semibold hidden lg:table-cell">Conexión/IP</TableHead>
-                <TableHead className="font-semibold hidden xl:table-cell">Toner</TableHead>
-                <TableHead className="font-semibold hidden xl:table-cell">Unid. Imagen</TableHead>
                 <TableHead className="font-semibold w-24">Estado</TableHead>
                 <TableHead className="font-semibold text-right w-20">Acc.</TableHead>
               </TableRow>
@@ -141,8 +139,6 @@ export default function Printers() {
                     <TableCell className="hidden md:table-cell text-sm max-w-[120px] truncate" title={p.sector}>{p.sector || "—"}</TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">{p.edificio || "—"}</TableCell>
                     <TableCell className="hidden lg:table-cell font-mono text-xs">{p.conexion || "—"}</TableCell>
-                    <TableCell className="hidden xl:table-cell text-xs max-w-[120px] truncate" title={p.toner}>{p.toner || "—"}</TableCell>
-                    <TableCell className="hidden xl:table-cell text-xs max-w-[120px] truncate" title={p.unidad_imagen}>{p.unidad_imagen || "—"}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={estado.className}>{estado.label}</Badge>
                     </TableCell>
@@ -168,7 +164,7 @@ export default function Printers() {
               })}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">No hay impresoras registradas</TableCell>
+                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No hay impresoras registradas</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -201,8 +197,6 @@ export default function Printers() {
                   sector: qrPrinter.sector,
                   edificio: qrPrinter.edificio,
                   piso: qrPrinter.piso,
-                  toner: qrPrinter.toner || "—",
-                  unidad_imagen: qrPrinter.unidad_imagen || "—",
                   estado: qrPrinter.estado,
                 })}
                 size={180}
@@ -217,8 +211,6 @@ export default function Printers() {
                 <div><span className="font-medium text-muted-foreground">Edificio:</span> {qrPrinter.edificio || "—"}</div>
                 <div><span className="font-medium text-muted-foreground">Piso:</span> {qrPrinter.piso || "—"}</div>
                 <div><span className="font-medium text-muted-foreground">Conexión:</span> {qrPrinter.conexion || "—"}</div>
-                <div><span className="font-medium text-muted-foreground">Toner:</span> {qrPrinter.toner || "—"}</div>
-                <div><span className="font-medium text-muted-foreground">Unid. Imagen:</span> {qrPrinter.unidad_imagen || "—"}</div>
               </div>
               <Button
                 variant="outline"
@@ -226,13 +218,11 @@ export default function Printers() {
                 onClick={() => {
                   const printWin = window.open("", "_blank", "width=420,height=580");
                   const info = [
-                    `<strong>${qrPrinter.printer_id}</strong>`,
-                    `${qrPrinter.marca} ${qrPrinter.modelo}`,
-                    qrPrinter.sector ? `Sector: ${qrPrinter.sector}` : "",
-                    qrPrinter.edificio ? `Edificio: ${qrPrinter.edificio} · Piso: ${qrPrinter.piso || "—"}` : "",
-                    qrPrinter.toner ? `Toner: ${qrPrinter.toner}` : "",
-                    qrPrinter.unidad_imagen ? `Unidad imagen: ${qrPrinter.unidad_imagen}` : "",
-                    `Estado: ${estadoMap[qrPrinter.estado]?.label || qrPrinter.estado}`,
+                   `<strong>${qrPrinter.printer_id}</strong>`,
+                   `${qrPrinter.marca} ${qrPrinter.modelo}`,
+                   qrPrinter.sector ? `Sector: ${qrPrinter.sector}` : "",
+                   qrPrinter.edificio ? `Edificio: ${qrPrinter.edificio} · Piso: ${qrPrinter.piso || "—"}` : "",
+                   `Estado: ${estadoMap[qrPrinter.estado]?.label || qrPrinter.estado}`,
                   ].filter(Boolean).map(t => `<p style="margin:2px 0;font-size:11px">${t}</p>`).join("");
                   const qrData = encodeURIComponent(JSON.stringify({ id: qrPrinter.printer_id, modelo: qrPrinter.modelo }));
                   printWin.document.write(`<html><head><title>QR ${qrPrinter.printer_id}</title>

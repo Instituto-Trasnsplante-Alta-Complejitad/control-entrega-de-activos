@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, Package, History, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, ShieldCheck } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -7,9 +7,7 @@ const navItems = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
   { label: "Stock de Equipos", path: "/stock", icon: Monitor },
   { label: "Impresoras", path: "/impresoras", icon: Printer },
-  { label: "Stock de Componentes", path: "/stock-componentes", icon: Package },
   { label: "Nueva Entrega", path: "/nueva-entrega", icon: PackagePlus },
-  { label: "Historial Consumos", path: "/historial", icon: History },
   { label: "Contratos", path: "/contratos", icon: FileText },
 ];
 
