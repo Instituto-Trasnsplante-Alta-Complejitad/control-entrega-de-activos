@@ -1,8 +1,8 @@
 // Inspired by react-hot-toast library
 import { useState, useEffect } from "react";
 
-const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_LIMIT = 5;
+const TOAST_REMOVE_DELAY = 5000; // default 5s if no duration specified
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -20,7 +20,7 @@ function genId() {
 
 const toastTimeouts = new Map();
 
-const addToRemoveQueue = (toastId) => {
+const addToRemoveQueue = (toastId, delay) => {
   if (toastTimeouts.has(toastId)) {
     return;
   }
@@ -31,7 +31,7 @@ const addToRemoveQueue = (toastId) => {
       type: actionTypes.REMOVE_TOAST,
       toastId,
     });
-  }, TOAST_REMOVE_DELAY);
+  }, delay ?? TOAST_REMOVE_DELAY);
 
   toastTimeouts.set(toastId, timeout);
 };
@@ -66,10 +66,11 @@ export const reducer = (state, action) => {
       // ! Side effects ! - This could be extracted into a dismissToast() action,
       // but I'll keep it here for simplicity
       if (toastId) {
-        addToRemoveQueue(toastId);
+        const t = state.toasts.find((t) => t.id === toastId);
+        addToRemoveQueue(toastId, t?.duration);
       } else {
         state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id);
+          addToRemoveQueue(toast.id, toast.duration);
         });
       }
 
@@ -134,6 +135,10 @@ function toast({ ...props }) {
     },
   });
 
+  // Auto-dismiss: use props.duration if provided, else default
+  const autoDismissDelay = props.duration ?? TOAST_REMOVE_DELAY;
+  setTimeout(() => dismiss(), autoDismissDelay);
+
   return {
     id,
     dismiss,
@@ -161,4 +166,4 @@ function useToast() {
   };
 }
 
-export { useToast, toast }; 
+export { useToast, toast };

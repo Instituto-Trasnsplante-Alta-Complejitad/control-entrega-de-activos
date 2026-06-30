@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, QrCode, Printer as PrinterIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
 import PrinterForm from "@/components/printers/PrinterForm";
 
 const estadoMap = {
@@ -21,6 +23,7 @@ export default function Printers() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [qrPrinter, setQrPrinter] = useState(null);
   const [search, setSearch] = useState("");
   const [edificioFilter, setEdificioFilter] = useState("all");
   const queryClient = useQueryClient();
@@ -128,6 +131,9 @@ export default function Printers() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="QR" onClick={() => setQrPrinter(p)}>
+                          <QrCode className="w-3.5 h-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(p); setShowForm(true); }}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
@@ -155,6 +161,72 @@ export default function Printers() {
         onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)}
         printer={editing}
       />
+
+      {/* QR Dialog */}
+      <Dialog open={!!qrPrinter} onOpenChange={() => setQrPrinter(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>QR de Impresora — {qrPrinter?.printer_id}</DialogTitle>
+          </DialogHeader>
+          {qrPrinter && (
+            <div className="flex flex-col items-center gap-4 py-2">
+              <QRCodeSVG
+                value={JSON.stringify({
+                  id: qrPrinter.printer_id,
+                  marca: qrPrinter.marca,
+                  modelo: qrPrinter.modelo,
+                  sector: qrPrinter.sector,
+                  edificio: qrPrinter.edificio,
+                  piso: qrPrinter.piso,
+                  toner: qrPrinter.toner || "—",
+                  unidad_imagen: qrPrinter.unidad_imagen || "—",
+                  estado: qrPrinter.estado,
+                })}
+                size={180}
+                level="M"
+              />
+              <div className="w-full text-xs grid grid-cols-2 gap-x-4 gap-y-1 border rounded-lg p-3 bg-muted/40">
+                <div><span className="font-medium text-muted-foreground">ID:</span> <span className="font-mono">{qrPrinter.printer_id}</span></div>
+                <div><span className="font-medium text-muted-foreground">Estado:</span> {estadoMap[qrPrinter.estado]?.label || qrPrinter.estado}</div>
+                <div><span className="font-medium text-muted-foreground">Marca:</span> {qrPrinter.marca}</div>
+                <div><span className="font-medium text-muted-foreground">Modelo:</span> {qrPrinter.modelo}</div>
+                <div><span className="font-medium text-muted-foreground">Sector:</span> {qrPrinter.sector || "—"}</div>
+                <div><span className="font-medium text-muted-foreground">Edificio:</span> {qrPrinter.edificio || "—"}</div>
+                <div><span className="font-medium text-muted-foreground">Piso:</span> {qrPrinter.piso || "—"}</div>
+                <div><span className="font-medium text-muted-foreground">Conexión:</span> {qrPrinter.conexion || "—"}</div>
+                <div><span className="font-medium text-muted-foreground">Toner:</span> {qrPrinter.toner || "—"}</div>
+                <div><span className="font-medium text-muted-foreground">Unid. Imagen:</span> {qrPrinter.unidad_imagen || "—"}</div>
+              </div>
+              <Button
+                variant="outline"
+                className="gap-2 w-full"
+                onClick={() => {
+                  const printWin = window.open("", "_blank", "width=420,height=580");
+                  const info = [
+                    `<strong>${qrPrinter.printer_id}</strong>`,
+                    `${qrPrinter.marca} ${qrPrinter.modelo}`,
+                    qrPrinter.sector ? `Sector: ${qrPrinter.sector}` : "",
+                    qrPrinter.edificio ? `Edificio: ${qrPrinter.edificio} · Piso: ${qrPrinter.piso || "—"}` : "",
+                    qrPrinter.toner ? `Toner: ${qrPrinter.toner}` : "",
+                    qrPrinter.unidad_imagen ? `Unidad imagen: ${qrPrinter.unidad_imagen}` : "",
+                    `Estado: ${estadoMap[qrPrinter.estado]?.label || qrPrinter.estado}`,
+                  ].filter(Boolean).map(t => `<p style="margin:2px 0;font-size:11px">${t}</p>`).join("");
+                  const qrData = encodeURIComponent(JSON.stringify({ id: qrPrinter.printer_id, modelo: qrPrinter.modelo }));
+                  printWin.document.write(`<html><head><title>QR ${qrPrinter.printer_id}</title>
+                    <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;margin:0;gap:8px;}p{margin:0;}</style>
+                    </head><body>${info}
+                    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
+                    <script>window.onload=()=>{const c=document.createElement("canvas");document.body.prepend(c);QRCode.toCanvas(c,decodeURIComponent("${qrData}"),{width:200},()=>{window.print();window.close();});}<\/script>
+                    </body></html>`);
+                  printWin.document.close();
+                }}
+              >
+                <PrinterIcon className="w-4 h-4" /> Imprimir QR
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleting} onOpenChange={() => setDeleting(null)}>
         <AlertDialogContent>

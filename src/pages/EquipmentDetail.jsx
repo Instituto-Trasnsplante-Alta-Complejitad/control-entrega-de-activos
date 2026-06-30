@@ -48,7 +48,8 @@ export default function EquipmentDetail() {
   }
 
   const st = statusMap[equipment.status] || statusMap.disponible;
-  const isCpu = equipment.type === "cpu";
+  const hasHardware = ["cpu", "notebook", "tablet"].includes(equipment.type);
+  const hasPeripherals = equipment.type === "cpu";
   const peripherals = [
     { key: "peripherals_mouse", label: "Mouse", icon: "🖱️" },
     { key: "peripherals_keyboard", label: "Teclado", icon: "⌨️" },
@@ -86,62 +87,68 @@ export default function EquipmentDetail() {
           </CardContent>
         </Card>
 
-        {isCpu && (
-          <>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><MonitorCheck className="w-4 h-4" /> Periféricos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-4">
-                  {peripherals.map((p) => (
-                    <span key={p.key} className={`text-sm px-3 py-1.5 rounded-lg border ${equipment[p.key] ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
-                      {p.icon} {p.label}: {equipment[p.key] ? "Incluido" : "No incluido"}
-                    </span>
-                  ))}
+        {hasPeripherals && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><MonitorCheck className="w-4 h-4" /> Periféricos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                {peripherals.map((p) => (
+                  <span key={p.key} className={`text-sm px-3 py-1.5 rounded-lg border ${equipment[p.key] ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
+                    {p.icon} {p.label}: {equipment[p.key] ? "Incluido" : "No incluido"}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {hasHardware && (equipment.processor_model || equipment.ram_amount || equipment.storage_capacity) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><Cpu className="w-4 h-4" /> Hardware</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {equipment.processor_model && (
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Procesador</span>
+                  <p className="font-medium">{equipment.processor_model}</p>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+              {(equipment.storage_capacity || equipment.storage_type) && (
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Almacenamiento</span>
+                  <p className="font-medium">{equipment.storage_capacity} {equipment.storage_type}</p>
+                </div>
+              )}
+              {(equipment.ram_amount || equipment.ram_speed) && (
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Memoria RAM</span>
+                  <p className="font-medium">
+                    {[equipment.ram_amount, equipment.ram_generation, equipment.ram_speed, equipment.ram_format, equipment.ram_slots ? `${equipment.ram_slots} slots` : ""].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2"><Cpu className="w-4 h-4" /> Hardware</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {equipment.processor_model && (
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Procesador</span>
-                    <p className="font-medium">{equipment.processor_model}</p>
-                  </div>
-                )}
-                {(equipment.storage_capacity || equipment.storage_type) && (
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Almacenamiento</span>
-                    <p className="font-medium">{equipment.storage_capacity} {equipment.storage_type}</p>
-                  </div>
-                )}
-                {(equipment.ram_amount || equipment.ram_speed) && (
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Memoria RAM</span>
-                    <p className="font-medium">
-                      {[equipment.ram_amount, equipment.ram_generation, equipment.ram_speed, equipment.ram_format, equipment.ram_slots ? `${equipment.ram_slots} slots` : ""].filter(Boolean).join(" · ")}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+        {equipment.operating_system && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><HardDrive className="w-4 h-4" /> Sistema Operativo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="font-medium">{equipment.operating_system}</p>
+            </CardContent>
+          </Card>
+        )}
 
-            {equipment.operating_system && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2"><HardDrive className="w-4 h-4" /> Sistema Operativo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="font-medium">{equipment.operating_system}</p>
-                </CardContent>
-              </Card>
-            )}
-          </>
+        {equipment.ocs_lastdate && (
+          <p className="text-center text-xs text-muted-foreground">
+            Último reporte OCS: {equipment.ocs_lastdate}{equipment.ocs_is_outdated ? " · ⚠️ Sin reporte reciente" : ""}
+          </p>
         )}
 
         <p className="text-center text-xs text-muted-foreground pt-4">

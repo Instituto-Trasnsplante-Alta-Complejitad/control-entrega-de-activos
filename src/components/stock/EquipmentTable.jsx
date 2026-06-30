@@ -157,36 +157,56 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
       </Table>
 
       <Dialog open={!!qrItem} onOpenChange={() => setQrItem(null)}>
-        <DialogContent className="sm:max-w-sm text-center">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>QR del Equipo</DialogTitle>
+            <DialogTitle>QR del Equipo — {qrItem?.asset_number}</DialogTitle>
           </DialogHeader>
           {qrItem && (
-            <div className="flex flex-col items-center gap-4 py-4">
-              <div id="qr-print-area" className="flex flex-col items-center gap-3 p-4">
+            <div className="flex flex-col items-center gap-4 py-2">
+              <div id="qr-print-area" className="flex flex-col items-center gap-3 p-4 w-full">
                 <QRCodeSVG
                   value={`${window.location.origin}/equipo/${qrItem.id}`}
-                  size={200}
+                  size={180}
                   level="M"
                 />
-                <p className="text-sm font-semibold">{qrItem.asset_number}</p>
-                <p className="text-xs text-muted-foreground">{qrItem.brand} {safeVal(qrItem.model, 30)}</p>
+                <div className="text-center space-y-1 w-full">
+                  <p className="text-sm font-bold font-mono">{qrItem.asset_number}</p>
+                  {(qrItem.brand || qrItem.model) && (
+                    <p className="text-xs text-muted-foreground">{qrItem.brand} {safeVal(qrItem.model, 40)}</p>
+                  )}
+                </div>
+              </div>
+              <div className="w-full text-xs grid grid-cols-2 gap-x-4 gap-y-1 border rounded-lg p-3 bg-muted/40">
+                <div><span className="font-medium text-muted-foreground">Tipo:</span> {typeMap[qrItem.type] || qrItem.type}{qrItem.subtype ? ` / ${qrItem.subtype}` : ""}</div>
+                <div><span className="font-medium text-muted-foreground">Estado:</span> {statusMap[qrItem.status]?.label || qrItem.status}</div>
+                {qrItem.serial_number && <div><span className="font-medium text-muted-foreground">Serie:</span> <span className="font-mono">{safeVal(qrItem.serial_number, 25)}</span></div>}
+                {qrItem.assigned_to && <div><span className="font-medium text-muted-foreground">Asignado:</span> {qrItem.assigned_to}</div>}
+                {qrItem.department && <div><span className="font-medium text-muted-foreground">Sector:</span> {qrItem.department}</div>}
+                {qrItem.processor_model && <div className="col-span-2"><span className="font-medium text-muted-foreground">CPU:</span> {safeVal(qrItem.processor_model, 50)}</div>}
+                {qrItem.ram_amount && <div><span className="font-medium text-muted-foreground">RAM:</span> {qrItem.ram_amount}{qrItem.ram_generation ? ` ${qrItem.ram_generation}` : ""}</div>}
+                {qrItem.storage_capacity && <div><span className="font-medium text-muted-foreground">Disco:</span> {qrItem.storage_capacity} {qrItem.storage_type || ""}</div>}
+                {qrItem.ocs_lastdate && <div className="col-span-2"><span className="font-medium text-muted-foreground">Último OCS:</span> {qrItem.ocs_lastdate}</div>}
               </div>
               <Button
                 variant="outline"
-                className="gap-2"
+                className="gap-2 w-full"
                 onClick={() => {
-                  const printWin = window.open("", "_blank", "width=400,height=500");
+                  const printWin = window.open("", "_blank", "width=420,height=580");
                   const url = `${window.location.origin}/equipo/${qrItem.id}`;
-                  printWin.document.write(`
-                    <html><head><title>QR ${qrItem.asset_number}</title>
-                    <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;gap:12px;}p{margin:0;}canvas,svg{display:block;}</style>
-                    </head><body>
-                    ${document.getElementById("qr-print-area").innerHTML}
+                  const info = [
+                    qrItem.asset_number,
+                    `${qrItem.brand || ""} ${safeVal(qrItem.model, 40)}`.trim(),
+                    qrItem.assigned_to ? `Asignado: ${qrItem.assigned_to}` : "",
+                    qrItem.department ? `Sector: ${qrItem.department}` : "",
+                    qrItem.ram_amount ? `RAM: ${qrItem.ram_amount}` : "",
+                    qrItem.storage_capacity ? `Disco: ${qrItem.storage_capacity} ${qrItem.storage_type || ""}` : "",
+                  ].filter(Boolean).map(t => `<p style="margin:2px 0;font-size:11px">${t}</p>`).join("");
+                  printWin.document.write(`<html><head><title>QR ${qrItem.asset_number}</title>
+                    <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;margin:0;gap:8px;}p{margin:0;}</style>
+                    </head><body>${info}
                     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
-                    <script>window.onload=()=>{document.querySelectorAll("svg").forEach(el=>el.remove());const c=document.createElement("canvas");document.body.prepend(c);QRCode.toCanvas(c,"${url}",{width:200},()=>{window.print();window.close();});}<\/script>
-                    </body></html>
-                  `);
+                    <script>window.onload=()=>{const c=document.createElement("canvas");document.body.prepend(c);QRCode.toCanvas(c,"${url}",{width:200},()=>{window.print();window.close();});}<\/script>
+                    </body></html>`);
                   printWin.document.close();
                 }}
               >
