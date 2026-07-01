@@ -1,10 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, FileText, Printer } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, FileText, Printer, Map as MapIcon } from "lucide-react";
 
 const navItems = [
   { label: "Inicio", path: "/", icon: LayoutDashboard },
   { label: "Equipos", path: "/stock", icon: Monitor },
-  { label: "Impresoras", path: "/impresoras", icon: Printer },
+  { label: "Mapa", path: "/mapa", icon: MapIcon },
   { label: "Entregar", path: "/nueva-entrega", icon: PackagePlus },
   { label: "Contratos", path: "/contratos", icon: FileText },
 ];

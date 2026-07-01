@@ -1,0 +1,29 @@
+{
+  "name": "Sede",
+  "type": "object",
+  "properties": {
+    "nombre": {
+      "type": "string",
+      "description": "Nombre de la sede"
+    },
+    "direccion": {
+      "type": "string",
+      "description": "Direcci\u00f3n (opcional)"
+    },
+    "descripcion": {
+      "type": "string",
+      "description": "Descripci\u00f3n (opcional)"
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "activa",
+        "inactiva"
+      ],
+      "default": "activa"
+    }
+  },
+  "required": [
+    "nombre"
+  ]
+}

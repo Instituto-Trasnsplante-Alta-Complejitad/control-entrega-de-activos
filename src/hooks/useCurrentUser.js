@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/AuthContext";
-import { isAdmin, canEditRecords, canDeleteRecords, canAdjustStock, canEditConsumptions, canManageCompatibility } from "@/lib/permissions";
+import { isAdmin, canEditRecords, canDeleteRecords, canAdjustStock, canEditConsumptions, canManageCompatibility, canManageMapa } from "@/lib/permissions";
 
 /**
  * Hook que expone el usuario actual y sus permisos calculados.
@@ -14,5 +14,6 @@ export function useCurrentUser() {
     canAdjustStock: canAdjustStock(user),
     canEditConsumptions: canEditConsumptions(user),
     canManageCompatibility: canManageCompatibility(user),
+    canManageMapa: canManageMapa(user),
   };
 }

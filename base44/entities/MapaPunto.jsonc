@@ -1,0 +1,37 @@
+{
+  "name": "MapaPunto",
+  "type": "object",
+  "properties": {
+    "sede_id": {
+      "type": "string",
+      "description": "ID de la sede"
+    },
+    "plano_id": {
+      "type": "string",
+      "description": "ID del plano"
+    },
+    "equipo_id": {
+      "type": "string",
+      "description": "ID del equipo asociado"
+    },
+    "x": {
+      "type": "number",
+      "description": "Posici\u00f3n X relativa sobre la imagen (0-100)"
+    },
+    "y": {
+      "type": "number",
+      "description": "Posici\u00f3n Y relativa sobre la imagen (0-100)"
+    },
+    "observacion": {
+      "type": "string",
+      "description": "Observaci\u00f3n opcional del punto"
+    }
+  },
+  "required": [
+    "sede_id",
+    "plano_id",
+    "equipo_id",
+    "x",
+    "y"
+  ]
+}

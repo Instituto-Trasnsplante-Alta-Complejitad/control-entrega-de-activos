@@ -18,6 +18,7 @@ import AcceptDelivery from '@/pages/AcceptDelivery';
 import Contracts from '@/pages/Contracts';
 import EquipmentDetail from '@/pages/EquipmentDetail';
 import Printers from '@/pages/Printers';
+import Mapa from '@/pages/Mapa';
 
 
 const AuthenticatedApp = () => {
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/stock" element={<Stock />} />
           <Route path="/impresoras" element={<Printers />} />
+          <Route path="/mapa" element={<Mapa />} />
           <Route path="/nueva-entrega" element={<NewDelivery />} />
           <Route path="/contratos" element={<Contracts />} />
           <Route path="/stock-componentes" element={<Navigate to="/" replace />} />
