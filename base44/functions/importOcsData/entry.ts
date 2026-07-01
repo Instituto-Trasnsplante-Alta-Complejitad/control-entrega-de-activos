@@ -5,6 +5,16 @@ const PROTECTED_FIELDS = new Set([
   "delivery_date", "comments"
 ]);
 
+// Normaliza un string para comparación: quita contenido entre paréntesis
+// (ej: "Intel(R) Core(TM) i5" → "Intel Core i5") y colapsa espacios extra.
+// Así, diferencias solo de paréntesis como (R)/(TM) no se marcan como cambio.
+function normalizeForCompare(str) {
+  return String(str || "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const OCS_UPDATABLE_FIELDS = [
   "brand", "model", "serial_number", "username", "processor_model",
   "storage_capacity", "storage_type", "ram_amount", "ram_slots",
@@ -92,7 +102,8 @@ Deno.serve(async (req) => {
             if (newVal === "" || newVal === null || newVal === undefined) continue;
             const newStr = String(newVal);
             const oldStr = existingRec[field] !== undefined && existingRec[field] !== null ? String(existingRec[field]) : "";
-            if (newStr !== oldStr) {
+            // Comparación exacta primero; si difiere, normalizar paréntesis antes de marcar cambio
+            if (newStr !== oldStr && normalizeForCompare(newStr) !== normalizeForCompare(oldStr)) {
               changes[field] = newVal;
               changeLogs.push({ field, old: oldStr, new: newStr });
             }
