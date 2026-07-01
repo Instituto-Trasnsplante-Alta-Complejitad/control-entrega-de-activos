@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const SYNC_SECRET = Deno.env.get("OCS_SYNC_SECRET") || "";
-
 const PROTECTED_FIELDS = new Set([
   "status", "user_type", "assigned_to", "department",
   "delivery_date", "comments"
@@ -17,13 +15,45 @@ const OCS_UPDATABLE_FIELDS = [
 ];
 
 Deno.serve(async (req) => {
+  // CORS + preflight para scripts externos
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, X-Sync-Secret",
+      },
+    });
+  }
+
   try {
-    // Validar secret
+    // ── Validar secret (leído dentro del handler para picks frescos) ──
+    const SYNC_SECRET = Deno.env.get("OCS_SYNC_SECRET") || "";
     const apiKey = req.headers.get("X-Sync-Secret") || "";
-    if (!SYNC_SECRET || apiKey !== SYNC_SECRET) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const headerPresent = apiKey !== "";
+    const secretConfigured = SYNC_SECRET !== "";
+
+    // Logs seguros — nunca exponer el valor completo del secret
+    console.log("[importOcsData] Header X-Sync-Secret presente:", headerPresent);
+    console.log("[importOcsData] OCS_SYNC_SECRET configurado:", secretConfigured);
+    if (headerPresent && secretConfigured) {
+      const headerTail = apiKey.slice(-4);
+      const secretTail = SYNC_SECRET.slice(-4);
+      console.log("[importOcsData] Comparación — header termina en:", headerTail, "| secret termina en:", secretTail, "| coinciden:", apiKey === SYNC_SECRET);
     }
 
+    if (!secretConfigured) {
+      console.error("[importOcsData] RECHAZADO: OCS_SYNC_SECRET no está configurado en el entorno");
+      return Response.json({ error: "Unauthorized", detail: "secret_not_configured" }, { status: 401 });
+    }
+
+    if (!headerPresent || apiKey !== SYNC_SECRET) {
+      console.error("[importOcsData] RECHAZADO: header ausente o no coincide");
+      return Response.json({ error: "Unauthorized", detail: headerPresent ? "mismatch" : "missing_header" }, { status: 401 });
+    }
+
+    console.log("[importOcsData] Autorización OK — procesando importación");
     const body = await req.json();
     const computers = body.computers; // array de equipos normalizados
     const mode = body.mode || "sync"; // "sync" | "preview"
@@ -108,9 +138,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ success: true, mode, stats, preview: preview.slice(0, 100) });
+    return Response.json({ success: true, mode, stats, preview: preview.slice(0, 100) }, {
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
 
   } catch (error) {
+    console.error("[importOcsData] Error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
