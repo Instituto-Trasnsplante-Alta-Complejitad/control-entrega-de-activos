@@ -1,18 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 
-export default function PuntoMarker({ equipment, color, style, onMouseDown }) {
+export default function PuntoMarker({ equipment, color, style, onPointerDown }) {
+  const [showTip, setShowTip] = useState(false);
+
   return (
     <div
-      className="absolute -translate-x-1/2 -translate-y-1/2 group z-10"
+      className="absolute -translate-x-1/2 -translate-y-1/2 z-10 touch-none"
       style={style}
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
     >
-      <div className={`w-4 h-4 rounded-full ${color} border-2 border-white shadow-lg cursor-pointer hover:scale-125 transition-transform`} />
-      <div className="absolute left-1/2 -translate-x-1/2 -top-9 z-50 hidden group-hover:block">
-        <div className="bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg">
-          {equipment ? (equipment.asset_number || "Sin asset") : "Equipo no encontrado"}
+      <div
+        className={`w-7 h-7 rounded-full ${color} border-[3px] border-white shadow-lg cursor-pointer hover:scale-125 transition-transform`}
+        onMouseEnter={() => setShowTip(true)}
+        onMouseLeave={() => setShowTip(false)}
+      />
+      {showTip && (
+        <div className="absolute left-1/2 -translate-x-1/2 -top-11 z-50 pointer-events-none">
+          <div className="bg-slate-900 text-white text-xs px-2.5 py-1.5 rounded-md whitespace-nowrap shadow-lg font-medium">
+            {equipment ? (equipment.asset_number || "Sin asset") : "Equipo no encontrado"}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

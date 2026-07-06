@@ -10,35 +10,37 @@ const STATUS_COLORS = {
 };
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+const getDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 export default function MapVisualizer({
   plano,
   puntos,
   equipmentById,
-  canEdit,
+  filters,
+  mode,
   onAddPoint,
+  onSelectPoint,
   onMovePoint,
   onMoveEnd,
-  onSelectPoint,
-  filters,
+  fullscreen,
 }) {
   const containerRef = useRef(null);
   const wrapperRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [baseWidth, setBaseWidth] = useState(0);
-  const dragState = useRef(null);
 
-  // refs to avoid stale closures in global listeners
+  const pointers = useRef(new Map());
+  const interaction = useRef(null);
+  const pinch = useRef(null);
+
   const view = useRef({ zoom, pan });
   view.current = { zoom, pan };
   const cb = useRef({});
-  cb.current = { canEdit, onAddPoint, onMovePoint, onMoveEnd, onSelectPoint };
+  cb.current = { mode, onAddPoint, onSelectPoint, onMovePoint, onMoveEnd };
 
   useEffect(() => {
-    const measure = () => {
-      if (containerRef.current) setBaseWidth(containerRef.current.clientWidth);
-    };
+    const measure = () => containerRef.current && setBaseWidth(containerRef.current.clientWidth);
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
@@ -49,85 +51,111 @@ export default function MapVisualizer({
     setPan({ x: 0, y: 0 });
   }, [plano?.id]);
 
-  useEffect(() => {
-    const onMove = (e) => {
-      const ds = dragState.current;
-      if (!ds) return;
-      const dx = e.clientX - ds.startX;
-      const dy = e.clientY - ds.startY;
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) ds.moved = true;
-      if (ds.mode === "pan") {
-        setPan({ x: ds.startPan.x + dx, y: ds.startPan.y + dy });
-      } else if (ds.mode === "point" && wrapperRef.current) {
-        const rect = wrapperRef.current.getBoundingClientRect();
-        const x = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
-        const y = clamp(((e.clientY - rect.top) / rect.height) * 100, 0, 100);
-        cb.current.onMovePoint(ds.puntoId, x, y);
-      }
-    };
-    const onUp = (e) => {
-      const ds = dragState.current;
-      if (!ds) return;
-      if (ds.mode === "pan" && !ds.moved && cb.current.canEdit && wrapperRef.current) {
-        const rect = wrapperRef.current.getBoundingClientRect();
-        if (rect.width > 0) {
-          const x = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
-          const y = clamp(((e.clientY - rect.top) / rect.height) * 100, 0, 100);
-          cb.current.onAddPoint(x, y);
-        }
-      } else if (ds.mode === "point") {
-        if (ds.moved) cb.current.onMoveEnd?.(ds.puntoId);
-        else cb.current.onSelectPoint(ds.punto);
-      }
-      dragState.current = null;
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, []);
-
-  const onWheel = (e) => {
-    e.preventDefault();
+  const zoomAt = (cx, cy, newZoom) => {
     const { zoom: z, pan: p } = view.current;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = clamp(z * factor, 0.3, 6);
-    const rect = containerRef.current.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
     const imgX = (cx - p.x) / z;
     const imgY = (cy - p.y) / z;
     setPan({ x: cx - imgX * newZoom, y: cy - imgY * newZoom });
     setZoom(newZoom);
   };
 
-  const onBackgroundDown = (e) => {
-    dragState.current = {
-      mode: "pan",
-      startX: e.clientX,
-      startY: e.clientY,
-      startPan: { ...view.current.pan },
-      moved: false,
-    };
+  const onWheel = (e) => {
+    e.preventDefault();
+    const rect = containerRef.current.getBoundingClientRect();
+    zoomAt(e.clientX - rect.left, e.clientY - rect.top, clamp(view.current.zoom * (e.deltaY < 0 ? 1.15 : 0.87), 0.3, 8));
   };
 
-  const startPointDrag = (e, punto) => {
-    e.stopPropagation();
-    if (!cb.current.canEdit) {
-      cb.current.onSelectPoint(punto);
-      return;
+  const onBgPointerDown = (e) => {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) {
+      const pts = [...pointers.current.values()];
+      pinch.current = { dist: getDist(pts[0], pts[1]), zoom: view.current.zoom };
+      interaction.current = null;
+    } else if (pointers.current.size === 1 && !interaction.current) {
+      interaction.current = { type: "pan", startX: e.clientX, startY: e.clientY, startPan: { ...view.current.pan }, moved: false };
     }
-    dragState.current = {
-      mode: "point",
+  };
+
+  const onPointPointerDown = (e, punto) => {
+    if (cb.current.mode === "add") return;
+    e.stopPropagation();
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    interaction.current = {
+      type: "point",
       startX: e.clientX,
       startY: e.clientY,
       moved: false,
       puntoId: punto.id,
       punto,
+      canDrag: cb.current.mode === "modify",
     };
   };
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (pointers.current.has(e.pointerId))
+        pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (pointers.current.size >= 2 && pinch.current) {
+        const pts = [...pointers.current.values()];
+        const dist = getDist(pts[0], pts[1]);
+        const newZoom = clamp(pinch.current.zoom * (dist / pinch.current.dist), 0.3, 8);
+        const rect = containerRef.current.getBoundingClientRect();
+        const mid = { x: (pts[0].x + pts[1].x) / 2 - rect.left, y: (pts[0].y + pts[1].y) / 2 - rect.top };
+        zoomAt(mid.x, mid.y, newZoom);
+        return;
+      }
+
+      const it = interaction.current;
+      if (!it) return;
+      const dx = e.clientX - it.startX;
+      const dy = e.clientY - it.startY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) it.moved = true;
+
+      if (it.type === "pan") {
+        setPan({ x: it.startPan.x + dx, y: it.startPan.y + dy });
+      } else if (it.type === "point" && it.canDrag && wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const x = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
+        const y = clamp(((e.clientY - rect.top) / rect.height) * 100, 0, 100);
+        cb.current.onMovePoint(it.puntoId, x, y);
+      }
+    };
+
+    const onUp = (e) => {
+      const it = interaction.current;
+
+      if (it && !it.moved && pointers.current.size <= 1) {
+        if (it.type === "pan") {
+          if (cb.current.mode === "add" && wrapperRef.current) {
+            const rect = wrapperRef.current.getBoundingClientRect();
+            if (rect.width > 0) {
+              const x = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
+              const y = clamp(((e.clientY - rect.top) / rect.height) * 100, 0, 100);
+              cb.current.onAddPoint(x, y);
+            }
+          }
+        } else if (it.type === "point") {
+          cb.current.onSelectPoint(it.punto);
+        }
+      } else if (it && it.moved && it.type === "point") {
+        cb.current.onMoveEnd?.(it.puntoId);
+      }
+
+      pointers.current.delete(e.pointerId);
+      if (pointers.current.size < 2) pinch.current = null;
+      if (pointers.current.size === 0) interaction.current = null;
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
 
   const visiblePuntos = puntos.filter((p) => {
     const eq = equipmentById[p.equipo_id];
@@ -142,13 +170,14 @@ export default function MapVisualizer({
   return (
     <div
       className="relative w-full bg-slate-100 rounded-lg overflow-hidden border"
-      style={{ height: "calc(100vh - 230px)" }}
+      style={{ height: fullscreen ? "100%" : "calc(100vh - 280px)" }}
     >
       <div
         ref={containerRef}
-        className="absolute inset-0 overflow-hidden cursor-grab active:cursor-grabbing"
+        className="absolute inset-0 overflow-hidden touch-none"
+        style={{ cursor: mode === "add" ? "crosshair" : "grab" }}
         onWheel={onWheel}
-        onMouseDown={onBackgroundDown}
+        onPointerDown={onBgPointerDown}
       >
         {plano && baseWidth > 0 && (
           <div
@@ -172,7 +201,7 @@ export default function MapVisualizer({
                     equipment={eq}
                     color={color}
                     style={{ left: `${p.x}%`, top: `${p.y}%` }}
-                    onMouseDown={(e) => startPointDrag(e, p)}
+                    onPointerDown={(e) => onPointPointerDown(e, p)}
                   />
                 );
               })}
@@ -181,23 +210,17 @@ export default function MapVisualizer({
         )}
       </div>
 
-      <div className="absolute bottom-4 right-4 flex flex-col gap-1 bg-white rounded-lg shadow p-1">
-        <button onClick={() => setZoom((z) => clamp(z * 1.2, 0.3, 6))} className="p-2 hover:bg-slate-100 rounded">
-          <Plus className="w-4 h-4" />
+      <div className="absolute bottom-4 right-4 flex flex-col gap-1 bg-white rounded-lg shadow-lg p-1.5">
+        <button onClick={() => setZoom((z) => clamp(z * 1.25, 0.3, 8))} className="p-3 hover:bg-slate-100 rounded-md touch-none">
+          <Plus className="w-5 h-5" />
         </button>
-        <button onClick={() => setZoom((z) => clamp(z / 1.2, 0.3, 6))} className="p-2 hover:bg-slate-100 rounded">
-          <Minus className="w-4 h-4" />
+        <button onClick={() => setZoom((z) => clamp(z / 1.25, 0.3, 8))} className="p-3 hover:bg-slate-100 rounded-md touch-none">
+          <Minus className="w-5 h-5" />
         </button>
-        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} className="p-2 hover:bg-slate-100 rounded">
-          <Maximize className="w-4 h-4" />
+        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} className="p-3 hover:bg-slate-100 rounded-md touch-none">
+          <Maximize className="w-5 h-5" />
         </button>
       </div>
-
-      {canEdit && (
-        <div className="absolute top-3 left-3 bg-white/90 px-3 py-1.5 rounded text-xs text-muted-foreground shadow">
-          Click en el plano para agregar un punto · arrastrá los puntos para moverlos
-        </div>
-      )}
     </div>
   );
 }

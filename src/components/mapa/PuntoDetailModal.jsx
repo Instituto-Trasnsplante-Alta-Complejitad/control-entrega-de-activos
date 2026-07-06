@@ -27,7 +27,7 @@ export default function PuntoDetailModal({ punto, equipment, open, onClose, canE
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
             {equipment?.asset_number || "Equipo"}
             {equipment && (
               <span className={`text-xs px-2 py-0.5 rounded ${STATUS_COLORS[equipment.status] || ""}`}>
@@ -54,13 +54,21 @@ export default function PuntoDetailModal({ punto, equipment, open, onClose, canE
         ) : (
           <p className="text-sm text-muted-foreground py-4">Equipo no encontrado.</p>
         )}
-        <DialogFooter className="gap-2 sm:justify-between">
-          <div className="flex gap-2">
-            {canEdit && equipment && <Button variant="outline" onClick={onEdit}>Cambiar equipo</Button>}
-            {canEdit && <Button variant="destructive" onClick={onDelete}>Eliminar punto</Button>}
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:justify-between">
+          <div className="flex gap-2 flex-wrap">
+            {canEdit && equipment && (
+              <Button variant="outline" size="lg" onClick={onEdit}>
+                Cambiar equipo
+              </Button>
+            )}
+            {canEdit && (
+              <Button variant="destructive" size="lg" onClick={onDelete}>
+                Eliminar punto
+              </Button>
+            )}
           </div>
           {equipment && (
-            <Button asChild>
+            <Button size="lg" asChild>
               <Link to={`/equipo/${equipment.id}`} target="_blank">
                 Ver ficha completa <ExternalLink className="w-4 h-4" />
               </Link>

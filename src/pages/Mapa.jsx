@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Loader2, Map as MapIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +19,7 @@ import SedeForm from "@/components/mapa/SedeForm";
 import PlanoTabs from "@/components/mapa/PlanoTabs";
 import PlanoManager from "@/components/mapa/PlanoManager";
 import MapVisualizer from "@/components/mapa/MapVisualizer";
+import MapToolbar from "@/components/mapa/MapToolbar";
 import MapFilters from "@/components/mapa/MapFilters";
 import PuntoForm from "@/components/mapa/PuntoForm";
 import PuntoDetailModal from "@/components/mapa/PuntoDetailModal";
@@ -30,12 +30,15 @@ export default function Mapa() {
 
   const [activeSedeId, setActiveSedeId] = useState(null);
   const [activePlanoId, setActivePlanoId] = useState(null);
+  const [mode, setMode] = useState("view");
+  const [fullscreen, setFullscreen] = useState(false);
   const [filters, setFilters] = useState({ tipo: "", estado: "", sector: "", usuario: "" });
   const [sedeForm, setSedeForm] = useState({ open: false, initial: null });
   const [planoForm, setPlanoForm] = useState(false);
   const [puntoForm, setPuntoForm] = useState({ open: false, pendingXY: null, initial: null });
   const [detail, setDetail] = useState({ open: false, punto: null });
   const [confirmSede, setConfirmSede] = useState(null);
+  const [confirmDeletePunto, setConfirmDeletePunto] = useState(null);
 
   const sedesQ = useQuery({
     queryKey: ["sedes"],
@@ -77,6 +80,11 @@ export default function Mapa() {
       setActivePlanoId(planos[0].id);
     }
   }, [planos, activeSedeId, activePlanoId]);
+
+  // Reset mode when entering fullscreen or changing plano
+  useEffect(() => {
+    setMode("view");
+  }, [activePlanoId]);
 
   // ── Mutaciones sedes ──
   const createSede = useMutation({
@@ -121,17 +129,18 @@ export default function Mapa() {
   // ── Mutaciones puntos ──
   const createPunto = useMutation({
     mutationFn: (data) => base44.entities.MapaPunto.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["puntos", activePlanoId] }); toast({ title: "Punto creado" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["puntos", activePlanoId] }); toast({ title: "Punto creado" }); setMode("view"); },
   });
   const updatePunto = useMutation({
     mutationFn: ({ id, data }) => base44.entities.MapaPunto.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["puntos", activePlanoId] }); toast({ title: "Punto actualizado" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["puntos", activePlanoId] }); toast({ title: "Punto actualizado" }); setMode("view"); },
   });
   const deletePunto = useMutation({
     mutationFn: (id) => base44.entities.MapaPunto.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["puntos", activePlanoId] }); toast({ title: "Punto eliminado" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["puntos", activePlanoId] }); toast({ title: "Punto eliminado del mapa" }); setMode("view"); },
   });
 
+  // ── Handlers ──
   const onMovePoint = (id, x, y) => {
     qc.setQueryData(["puntos", activePlanoId], (old) => (old || []).map((p) => (p.id === id ? { ...p, x, y } : p)));
   };
@@ -141,10 +150,21 @@ export default function Mapa() {
     if (p) updatePunto.mutate({ id, data: { x: p.x, y: p.y } });
   };
 
-  const openAddPunto = (x, y) => {
-    if (!canManageMapa) return;
+  const onAddPoint = (x, y) => {
+    if (!canManageMapa || mode !== "add") return;
     setPuntoForm({ open: true, pendingXY: { x, y }, initial: null });
   };
+
+  const onSelectPoint = (punto) => {
+    if (mode === "delete") {
+      setConfirmDeletePunto(punto);
+    } else if (mode === "modify") {
+      setPuntoForm({ open: true, pendingXY: null, initial: { id: punto.id, equipo: equipmentById[punto.equipo_id], observacion: punto.observacion } });
+    } else {
+      setDetail({ open: true, punto });
+    }
+  };
+
   const savePunto = (data) => {
     if (puntoForm.initial?.id) {
       updatePunto.mutate({ id: puntoForm.initial.id, data: { equipo_id: data.equipo_id, observacion: data.observacion } });
@@ -164,38 +184,53 @@ export default function Mapa() {
   const editFromDetail = () => {
     const p = detail.punto;
     setDetail({ open: false, punto: null });
+    setMode("modify");
     setPuntoForm({ open: true, pendingXY: null, initial: { id: p.id, equipo: equipmentById[p.equipo_id], observacion: p.observacion } });
   };
   const deleteFromDetail = () => {
-    deletePunto.mutate(detail.punto.id);
+    setConfirmDeletePunto(detail.punto);
     setDetail({ open: false, punto: null });
   };
 
   const existingEquipoIds = puntos.map((p) => p.equipo_id);
+  const confirmPuntoEquipment = confirmDeletePunto ? equipmentById[confirmDeletePunto.equipo_id] : null;
+
+  const containerClass = fullscreen
+    ? "fixed inset-0 z-50 bg-white flex flex-col p-3 gap-2"
+    : "p-4 md:p-6 space-y-4";
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <MapIcon className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Mapa de sedes</h1>
+    <div className={containerClass}>
+      {!fullscreen && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <MapIcon className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold">Mapa de sedes</h1>
+          </div>
+          <SedeSelector
+            sedes={sedes}
+            activeId={activeSedeId}
+            onSelect={setActiveSedeId}
+            canEdit={canManageMapa}
+            onAdd={() => setSedeForm({ open: true, initial: null })}
+            onEdit={() => {
+              const s = sedes.find((x) => x.id === activeSedeId);
+              if (s) setSedeForm({ open: true, initial: s });
+            }}
+            onDelete={() => {
+              const s = sedes.find((x) => x.id === activeSedeId);
+              if (s) setConfirmSede(s);
+            }}
+          />
         </div>
-        <SedeSelector
-          sedes={sedes}
-          activeId={activeSedeId}
-          onSelect={setActiveSedeId}
-          canEdit={canManageMapa}
-          onAdd={() => setSedeForm({ open: true, initial: null })}
-          onEdit={() => {
-            const s = sedes.find((x) => x.id === activeSedeId);
-            if (s) setSedeForm({ open: true, initial: s });
-          }}
-          onDelete={() => {
-            const s = sedes.find((x) => x.id === activeSedeId);
-            if (s) setConfirmSede(s);
-          }}
-        />
-      </div>
+      )}
+
+      {fullscreen && activeSedeRec && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">{activeSedeRec.nombre}</span>
+          {activePlano && <span>· {activePlano.nombre}</span>}
+        </div>
+      )}
 
       {sedesQ.isLoading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
@@ -205,20 +240,22 @@ export default function Mapa() {
         </div>
       ) : (
         <>
-          {activeSedeRec && (activeSedeRec.direccion || activeSedeRec.descripcion) && (
+          {!fullscreen && activeSedeRec && (activeSedeRec.direccion || activeSedeRec.descripcion) && (
             <p className="text-sm text-muted-foreground">
               {activeSedeRec.direccion}{activeSedeRec.direccion && activeSedeRec.descripcion ? " · " : ""}{activeSedeRec.descripcion}
             </p>
           )}
 
-          <PlanoTabs
-            planos={planos}
-            activeId={activePlano?.id}
-            onSelect={setActivePlanoId}
-            canEdit={canManageMapa}
-            onAdd={() => setPlanoForm(true)}
-            onDeleteActive={() => activePlano && deletePlano.mutate(activePlano.id)}
-          />
+          {!fullscreen && (
+            <PlanoTabs
+              planos={planos}
+              activeId={activePlano?.id}
+              onSelect={setActivePlanoId}
+              canEdit={canManageMapa}
+              onAdd={() => setPlanoForm(true)}
+              onDeleteActive={() => activePlano && deletePlano.mutate(activePlano.id)}
+            />
+          )}
 
           {planosQ.isLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
@@ -228,23 +265,35 @@ export default function Mapa() {
             </div>
           ) : (
             <>
-              <MapFilters filters={filters} setFilters={setFilters} equipmentList={equipment} />
-              <MapVisualizer
-                plano={activePlano}
-                puntos={puntos}
-                equipmentById={equipmentById}
+              {!fullscreen && <MapFilters filters={filters} setFilters={setFilters} equipmentList={equipment} />}
+              <MapToolbar
+                mode={mode}
+                setMode={setMode}
                 canEdit={canManageMapa}
-                onAddPoint={openAddPunto}
-                onMovePoint={onMovePoint}
-                onMoveEnd={onMoveEnd}
-                onSelectPoint={(p) => setDetail({ open: true, punto: p })}
-                filters={filters}
+                fullscreen={fullscreen}
+                onToggleFullscreen={() => setFullscreen((f) => !f)}
+                hasPlano={!!activePlano}
               />
+              <div className={fullscreen ? "flex-1 min-h-0" : ""}>
+                <MapVisualizer
+                  plano={activePlano}
+                  puntos={puntos}
+                  equipmentById={equipmentById}
+                  mode={mode}
+                  onAddPoint={onAddPoint}
+                  onMovePoint={onMovePoint}
+                  onMoveEnd={onMoveEnd}
+                  onSelectPoint={onSelectPoint}
+                  filters={filters}
+                  fullscreen={fullscreen}
+                />
+              </div>
             </>
           )}
         </>
       )}
 
+      {/* ── Modals ── */}
       <SedeForm
         open={sedeForm.open}
         onClose={() => setSedeForm({ open: false, initial: null })}
@@ -295,6 +344,31 @@ export default function Mapa() {
               onClick={() => deleteSede.mutate(confirmSede)}
             >
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmDeletePunto} onOpenChange={(o) => !o && setConfirmDeletePunto(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar punto del mapa</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Eliminar el punto del equipo{" "}
+              <strong>{confirmPuntoEquipment?.asset_number || "seleccionado"}</strong>?
+              Solo se quitará del mapa, el equipo no será borrado del sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmDeletePunto) deletePunto.mutate(confirmDeletePunto.id);
+                setConfirmDeletePunto(null);
+              }}
+            >
+              Eliminar punto
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
