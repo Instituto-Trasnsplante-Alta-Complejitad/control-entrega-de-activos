@@ -16,6 +16,7 @@ const statusMap = {
 
 const typeMap = {
   notebook: "Notebook",
+  all_in_one: "All in One",
   tablet: "Tablet",
   celular: "Celular",
   cpu: "CPU",

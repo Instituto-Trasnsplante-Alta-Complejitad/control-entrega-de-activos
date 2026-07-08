@@ -10,6 +10,7 @@
       "type": "string",
       "enum": [
         "notebook",
+        "all_in_one",
         "tablet",
         "celular",
         "cpu",

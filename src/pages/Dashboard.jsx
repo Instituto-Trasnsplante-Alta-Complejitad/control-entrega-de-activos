@@ -10,7 +10,7 @@ import { es } from "date-fns/locale";
 import StatCard from "@/components/dashboard/StatCard";
 
 const typeMap = {
-  notebook: "Notebook", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro",
+  notebook: "Notebook", all_in_one: "All in One", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro",
 };
 
 const statusMap = {

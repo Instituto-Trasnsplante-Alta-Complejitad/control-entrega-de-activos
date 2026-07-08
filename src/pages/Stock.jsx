@@ -174,6 +174,7 @@ export default function Stock() {
             <SelectContent>
               <SelectItem value="all">Todos los tipos</SelectItem>
               <SelectItem value="notebook">Notebook</SelectItem>
+              <SelectItem value="all_in_one">All in One</SelectItem>
               <SelectItem value="tablet">Tablet</SelectItem>
               <SelectItem value="celular">Celular</SelectItem>
               <SelectItem value="cpu">CPU</SelectItem>

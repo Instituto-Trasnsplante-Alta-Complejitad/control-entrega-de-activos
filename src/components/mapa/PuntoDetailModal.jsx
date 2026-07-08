@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
 
-const TYPE_LABELS = { notebook: "Notebook", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro" };
+const TYPE_LABELS = { notebook: "Notebook", all_in_one: "All in One", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro" };
 const STATUS_LABELS = { disponible: "Disponible", asignado: "Asignado", en_reparacion: "En reparación", baja: "Baja" };
 const STATUS_COLORS = {
   disponible: "bg-emerald-100 text-emerald-700",

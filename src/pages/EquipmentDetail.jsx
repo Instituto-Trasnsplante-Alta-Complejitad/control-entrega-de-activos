@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Monitor, Cpu, HardDrive, MemoryStick, MonitorCheck } from "lucide-react";
 
 const typeMap = {
-  notebook: "Notebook", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro",
+  notebook: "Notebook", all_in_one: "All in One", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro",
 };
 
 const statusMap = {
@@ -48,7 +48,7 @@ export default function EquipmentDetail() {
   }
 
   const st = statusMap[equipment.status] || statusMap.disponible;
-  const hasHardware = ["cpu", "notebook", "tablet"].includes(equipment.type);
+  const hasHardware = ["cpu", "notebook", "all_in_one", "tablet"].includes(equipment.type);
   const hasPeripherals = equipment.type === "cpu";
   const peripherals = [
     { key: "peripherals_mouse", label: "Mouse", icon: "🖱️" },

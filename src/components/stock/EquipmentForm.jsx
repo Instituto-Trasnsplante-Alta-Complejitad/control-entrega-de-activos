@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 const TYPES = [
   { value: "notebook", label: "Notebook" },
+  { value: "all_in_one", label: "All in One" },
   { value: "tablet", label: "Tablet" },
   { value: "celular", label: "Celular" },
   { value: "cpu", label: "CPU" },
@@ -144,7 +145,7 @@ export default function EquipmentForm({ open, onClose, onSubmit, equipment }) {
   };
 
   const isCpu = form.type === "cpu";
-  const showHardwareSpecs = form.type === "cpu" || form.type === "notebook";
+  const showHardwareSpecs = form.type === "cpu" || form.type === "notebook" || form.type === "all_in_one";
 
   const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
