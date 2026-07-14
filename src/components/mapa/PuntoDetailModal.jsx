@@ -1,8 +1,9 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Printer, Monitor } from "lucide-react";
 
 const TYPE_LABELS = { notebook: "Notebook", all_in_one: "All in One", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro" };
 const STATUS_LABELS = { disponible: "Disponible", asignado: "Asignado", en_reparacion: "En reparación", baja: "Baja" };
@@ -13,52 +14,101 @@ const STATUS_COLORS = {
   baja: "bg-red-100 text-red-700",
 };
 
-function Field({ label, value }) {
+function EquipoBlock({ entity }) {
   return (
-    <div className="flex justify-between gap-4 py-1.5 border-b last:border-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-right">{value || "-"}</span>
+    <div className="border rounded-lg p-3 space-y-1.5">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Monitor className="w-4 h-4 text-muted-foreground" />
+        <span className="font-semibold">{entity?.asset_number || "Equipo no encontrado"}</span>
+        {entity && (
+          <span className={`text-xs px-2 py-0.5 rounded ${STATUS_COLORS[entity.status] || ""}`}>
+            {STATUS_LABELS[entity.status] || entity.status}
+          </span>
+        )}
+        {entity && (
+          <Button size="sm" variant="ghost" asChild className="ml-auto h-7 px-2">
+            <Link to={`/equipo/${entity.id}`} target="_blank">
+              Ficha <ExternalLink className="w-3 h-3" />
+            </Link>
+          </Button>
+        )}
+      </div>
+      {entity ? (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <div>{TYPE_LABELS[entity.type] || entity.type} · {[entity.brand, entity.model].filter(Boolean).join(" ")}</div>
+          {entity.assigned_to && <div>Usuario: {entity.assigned_to}</div>}
+          {entity.department && <div>Sector: {entity.department}</div>}
+          {entity.processor_model && <div>CPU: {entity.processor_model}</div>}
+          {(entity.ram_amount || entity.storage_capacity) && (
+            <div>RAM: {entity.ram_amount || "-"} · Alm: {[entity.storage_capacity, entity.storage_type].filter(Boolean).join(" ") || "-"}</div>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Equipo no encontrado.</p>
+      )}
     </div>
   );
 }
 
-export default function PuntoDetailModal({ punto, equipment, open, onClose, canEdit, onEdit, onDelete }) {
+function ImpresoraBlock({ entity }) {
+  return (
+    <div className="border rounded-lg p-3 space-y-1.5">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Printer className="w-4 h-4 text-muted-foreground" />
+        <span className="font-semibold">{entity?.printer_id || "Impresora no encontrada"}</span>
+        {entity?.estado && (
+          <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700">{entity.estado}</span>
+        )}
+      </div>
+      {entity ? (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <div>{[entity.marca, entity.modelo].filter(Boolean).join(" ")}</div>
+          {entity.sector && <div>Sector: {entity.sector}</div>}
+          {entity.piso && <div>Piso: {entity.piso}</div>}
+          {entity.conexion && <div>Conexión: {entity.conexion}</div>}
+          {entity.toner && <div>Toner: {entity.toner}</div>}
+          {entity.unidad_imagen && <div>Unidad imagen: {entity.unidad_imagen}</div>}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Impresora no encontrada.</p>
+      )}
+    </div>
+  );
+}
+
+export default function PuntoDetailModal({ punto, items, equiposById, impresorasById, open, onClose, canEdit, onEdit, onDelete }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
-            {equipment?.asset_number || "Equipo"}
-            {equipment && (
-              <span className={`text-xs px-2 py-0.5 rounded ${STATUS_COLORS[equipment.status] || ""}`}>
-                {STATUS_LABELS[equipment.status] || equipment.status}
-              </span>
-            )}
+          <DialogTitle className="flex items-center gap-2">
+            Punto del mapa
+            <Badge variant="secondary">{items.length} ítem{items.length !== 1 ? "s" : ""}</Badge>
           </DialogTitle>
         </DialogHeader>
-        {equipment ? (
-          <div className="py-2">
-            <Field label="Tipo" value={TYPE_LABELS[equipment.type] || equipment.type} />
-            <Field label="Asset number" value={equipment.asset_number} />
-            <Field label="Serial" value={equipment.serial_number} />
-            <Field label="Marca / Modelo" value={`${equipment.brand || ""} ${equipment.model || ""}`.trim()} />
-            <Field label="Usuario" value={equipment.assigned_to} />
-            <Field label="Usuario de red" value={equipment.username} />
-            <Field label="Sector" value={equipment.department} />
-            <Field label="Procesador" value={equipment.processor_model} />
-            <Field label="RAM" value={equipment.ram_amount} />
-            <Field label="Almacenamiento" value={[equipment.storage_capacity, equipment.storage_type].filter(Boolean).join(" ")} />
-            <Field label="Sistema operativo" value={equipment.operating_system} />
-            {punto?.observacion && <Field label="Observación del punto" value={punto.observacion} />}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground py-4">Equipo no encontrado.</p>
-        )}
+        <div className="py-2 space-y-2 max-h-[50vh] overflow-auto">
+          {items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Este punto no tiene ítems asociados.</p>
+          ) : (
+            items.map((it, idx) =>
+              it.tipo === "equipo" ? (
+                <EquipoBlock key={`eq:${it.id}:${idx}`} entity={equiposById?.[it.id]} />
+              ) : (
+                <ImpresoraBlock key={`imp:${it.id}:${idx}`} entity={impresorasById?.[it.id]} />
+              )
+            )
+          )}
+          {punto?.observacion && (
+            <div className="text-sm text-muted-foreground pt-1">
+              <span className="font-medium text-foreground">Observación: </span>{punto.observacion}
+            </div>
+          )}
+        </div>
         <DialogFooter className="flex-col sm:flex-row gap-2 sm:justify-between">
           <div className="flex gap-2 flex-wrap">
-            {canEdit && equipment && (
+            {canEdit && (
               <Button variant="outline" size="lg" onClick={onEdit}>
-                Cambiar equipo
+                Editar ítems
               </Button>
             )}
             {canEdit && (
@@ -67,13 +117,6 @@ export default function PuntoDetailModal({ punto, equipment, open, onClose, canE
               </Button>
             )}
           </div>
-          {equipment && (
-            <Button size="lg" asChild>
-              <Link to={`/equipo/${equipment.id}`} target="_blank">
-                Ver ficha completa <ExternalLink className="w-4 h-4" />
-              </Link>
-            </Button>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

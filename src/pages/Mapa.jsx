@@ -23,6 +23,7 @@ import MapToolbar from "@/components/mapa/MapToolbar";
 import MapFilters from "@/components/mapa/MapFilters";
 import PuntoForm from "@/components/mapa/PuntoForm";
 import PuntoDetailModal from "@/components/mapa/PuntoDetailModal";
+import { getPuntoItems, itemLabel } from "@/lib/mapaHelpers";
 
 export default function Mapa() {
   const { canManageMapa } = useCurrentUser();
@@ -58,12 +59,18 @@ export default function Mapa() {
     queryKey: ["equipment-map"],
     queryFn: () => base44.entities.Equipment.list("-updated_date", 2000),
   });
+  const printerQ = useQuery({
+    queryKey: ["printers-map"],
+    queryFn: () => base44.entities.Printer.list("-updated_date", 500),
+  });
 
   const sedes = sedesQ.data || [];
   const planos = planosQ.data || [];
   const puntos = puntosQ.data || [];
   const equipment = equipQ.data || [];
-  const equipmentById = useMemo(() => Object.fromEntries(equipment.map((e) => [e.id, e])), [equipment]);
+  const printers = printerQ.data || [];
+  const equiposById = useMemo(() => Object.fromEntries(equipment.map((e) => [e.id, e])), [equipment]);
+  const impresorasById = useMemo(() => Object.fromEntries(printers.map((p) => [p.id, p])), [printers]);
   const activePlano = planos.find((p) => p.id === activePlanoId) || planos[0];
   const activeSedeRec = sedes.find((s) => s.id === activeSedeId);
 
@@ -81,7 +88,6 @@ export default function Mapa() {
     }
   }, [planos, activeSedeId, activePlanoId]);
 
-  // Reset mode when entering fullscreen or changing plano
   useEffect(() => {
     setMode("view");
   }, [activePlanoId]);
@@ -159,7 +165,8 @@ export default function Mapa() {
     if (mode === "delete") {
       setConfirmDeletePunto(punto);
     } else if (mode === "modify") {
-      setPuntoForm({ open: true, pendingXY: null, initial: { id: punto.id, equipo: equipmentById[punto.equipo_id], observacion: punto.observacion } });
+      const items = getPuntoItems(punto);
+      setPuntoForm({ open: true, pendingXY: null, initial: { id: punto.id, items, observacion: punto.observacion } });
     } else {
       setDetail({ open: true, punto });
     }
@@ -167,12 +174,12 @@ export default function Mapa() {
 
   const savePunto = (data) => {
     if (puntoForm.initial?.id) {
-      updatePunto.mutate({ id: puntoForm.initial.id, data: { equipo_id: data.equipo_id, observacion: data.observacion } });
+      updatePunto.mutate({ id: puntoForm.initial.id, data: { items: data.items, observacion: data.observacion } });
     } else if (puntoForm.pendingXY) {
       createPunto.mutate({
         sede_id: activeSedeId,
         plano_id: activePlano.id,
-        equipo_id: data.equipo_id,
+        items: data.items,
         x: puntoForm.pendingXY.x,
         y: puntoForm.pendingXY.y,
         observacion: data.observacion,
@@ -183,17 +190,22 @@ export default function Mapa() {
 
   const editFromDetail = () => {
     const p = detail.punto;
+    const items = getPuntoItems(p);
     setDetail({ open: false, punto: null });
     setMode("modify");
-    setPuntoForm({ open: true, pendingXY: null, initial: { id: p.id, equipo: equipmentById[p.equipo_id], observacion: p.observacion } });
+    setPuntoForm({ open: true, pendingXY: null, initial: { id: p.id, items, observacion: p.observacion } });
   };
   const deleteFromDetail = () => {
     setConfirmDeletePunto(detail.punto);
     setDetail({ open: false, punto: null });
   };
 
-  const existingEquipoIds = puntos.map((p) => p.equipo_id);
-  const confirmPuntoEquipment = confirmDeletePunto ? equipmentById[confirmDeletePunto.equipo_id] : null;
+  const confirmPuntoItems = confirmDeletePunto ? getPuntoItems(confirmDeletePunto) : [];
+  const confirmPuntoLabel = confirmPuntoItems
+    .map((it) => itemLabel(it, equiposById, impresorasById))
+    .join(", ");
+
+  const detailItems = detail.punto ? getPuntoItems(detail.punto) : [];
 
   const containerClass = fullscreen
     ? "fixed inset-0 z-50 bg-white flex flex-col p-3 gap-2"
@@ -278,7 +290,8 @@ export default function Mapa() {
                 <MapVisualizer
                   plano={activePlano}
                   puntos={puntos}
-                  equipmentById={equipmentById}
+                  equiposById={equiposById}
+                  impresorasById={impresorasById}
                   mode={mode}
                   onAddPoint={onAddPoint}
                   onMovePoint={onMovePoint}
@@ -315,13 +328,14 @@ export default function Mapa() {
         open={puntoForm.open}
         onClose={() => setPuntoForm({ open: false, pendingXY: null, initial: null })}
         initial={puntoForm.initial}
-        existingEquipoIds={existingEquipoIds}
         onSave={savePunto}
       />
 
       <PuntoDetailModal
         punto={detail.punto}
-        equipment={detail.punto ? equipmentById[detail.punto.equipo_id] : null}
+        items={detailItems}
+        equiposById={equiposById}
+        impresorasById={impresorasById}
         open={detail.open}
         onClose={() => setDetail({ open: false, punto: null })}
         canEdit={canManageMapa}
@@ -354,9 +368,8 @@ export default function Mapa() {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar punto del mapa</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Eliminar el punto del equipo{" "}
-              <strong>{confirmPuntoEquipment?.asset_number || "seleccionado"}</strong>?
-              Solo se quitará del mapa, el equipo no será borrado del sistema.
+              ¿Eliminar el punto con ítems <strong>{confirmPuntoLabel || "seleccionado"}</strong>?
+              Solo se quitará del mapa, los equipos e impresoras no serán borrados del sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

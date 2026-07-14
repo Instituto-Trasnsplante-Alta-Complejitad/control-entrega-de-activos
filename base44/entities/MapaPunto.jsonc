@@ -12,7 +12,32 @@
     },
     "equipo_id": {
       "type": "string",
-      "description": "ID del equipo asociado"
+      "description": "ID del equipo asociado (legacy - usar items)"
+    },
+    "items": {
+      "type": "array",
+      "description": "Lista de \u00edtems asociados al punto (equipos, impresoras, scanners)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "equipo",
+              "impresora"
+            ],
+            "description": "Tipo de \u00edtem"
+          },
+          "id": {
+            "type": "string",
+            "description": "ID del \u00edtem"
+          }
+        },
+        "required": [
+          "tipo",
+          "id"
+        ]
+      }
     },
     "x": {
       "type": "number",
@@ -30,7 +55,6 @@
   "required": [
     "sede_id",
     "plano_id",
-    "equipo_id",
     "x",
     "y"
   ]

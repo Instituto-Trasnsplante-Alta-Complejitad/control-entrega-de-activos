@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Plus, Minus, Maximize } from "lucide-react";
 import PuntoMarker from "./PuntoMarker";
+import { getPuntoItems, itemLabel } from "@/lib/mapaHelpers";
 
 const STATUS_COLORS = {
   disponible: "bg-emerald-500",
@@ -15,7 +16,8 @@ const getDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 export default function MapVisualizer({
   plano,
   puntos,
-  equipmentById,
+  equiposById,
+  impresorasById,
   filters,
   mode,
   onAddPoint,
@@ -157,14 +159,22 @@ export default function MapVisualizer({
     };
   }, []);
 
+  const hasFilters = filters?.tipo || filters?.estado || filters?.sector || filters?.usuario;
+
   const visiblePuntos = puntos.filter((p) => {
-    const eq = equipmentById[p.equipo_id];
-    if (!eq) return true;
-    if (filters.tipo && eq.type !== filters.tipo) return false;
-    if (filters.estado && eq.status !== filters.estado) return false;
-    if (filters.sector && eq.department !== filters.sector) return false;
-    if (filters.usuario && eq.assigned_to !== filters.usuario) return false;
-    return true;
+    const items = getPuntoItems(p);
+    if (items.length === 0 || !hasFilters) return true;
+    const eqEntities = items
+      .filter((it) => it.tipo === "equipo")
+      .map((it) => equiposById[it.id])
+      .filter(Boolean);
+    return eqEntities.some(
+      (eq) =>
+        (!filters.tipo || eq.type === filters.tipo) &&
+        (!filters.estado || eq.status === filters.estado) &&
+        (!filters.sector || eq.department === filters.sector) &&
+        (!filters.usuario || eq.assigned_to === filters.usuario)
+    );
   });
 
   return (
@@ -193,13 +203,23 @@ export default function MapVisualizer({
                 alt={plano.nombre}
               />
               {visiblePuntos.map((p) => {
-                const eq = equipmentById[p.equipo_id];
-                const color = eq ? STATUS_COLORS[eq.status] || "bg-slate-500" : "bg-slate-500";
+                const items = getPuntoItems(p);
+                const eqEntities = items
+                  .filter((it) => it.tipo === "equipo")
+                  .map((it) => equiposById[it.id])
+                  .filter(Boolean);
+                const color = eqEntities.length > 0
+                  ? (STATUS_COLORS[eqEntities[0].status] || "bg-slate-500")
+                  : "bg-violet-500";
+                const label = items
+                  .map((it) => itemLabel(it, equiposById, impresorasById))
+                  .join(", ");
                 return (
                   <PuntoMarker
                     key={p.id}
-                    equipment={eq}
+                    label={label}
                     color={color}
+                    count={items.length}
                     style={{ left: `${p.x}%`, top: `${p.y}%` }}
                     onPointerDown={(e) => onPointPointerDown(e, p)}
                   />

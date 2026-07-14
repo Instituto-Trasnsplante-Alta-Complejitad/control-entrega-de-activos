@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function PuntoMarker({ equipment, color, style, onPointerDown }) {
+export default function PuntoMarker({ label, color, count, style, onPointerDown }) {
   const [showTip, setShowTip] = useState(false);
 
   return (
@@ -10,14 +10,20 @@ export default function PuntoMarker({ equipment, color, style, onPointerDown }) 
       onPointerDown={onPointerDown}
     >
       <div
-        className={`w-7 h-7 rounded-full ${color} border-[3px] border-white shadow-lg cursor-pointer hover:scale-125 transition-transform`}
+        className={`relative w-4 h-4 rounded-full ${color} border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-transform`}
         onMouseEnter={() => setShowTip(true)}
         onMouseLeave={() => setShowTip(false)}
-      />
+      >
+        {count > 1 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-slate-900 text-white text-[9px] font-bold rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-0.5 leading-none">
+            {count}
+          </span>
+        )}
+      </div>
       {showTip && (
-        <div className="absolute left-1/2 -translate-x-1/2 -top-11 z-50 pointer-events-none">
-          <div className="bg-slate-900 text-white text-xs px-2.5 py-1.5 rounded-md whitespace-nowrap shadow-lg font-medium">
-            {equipment ? (equipment.asset_number || "Sin asset") : "Equipo no encontrado"}
+        <div className="absolute left-1/2 -translate-x-1/2 -top-9 z-50 pointer-events-none">
+          <div className="bg-slate-900 text-white text-xs px-2.5 py-1.5 rounded-md whitespace-nowrap shadow-lg font-medium max-w-[220px] overflow-hidden text-ellipsis">
+            {label || "Punto sin ítems"}
           </div>
         </div>
       )}
