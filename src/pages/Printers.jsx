@@ -198,6 +198,8 @@ export default function Printers() {
                   edificio: qrPrinter.edificio,
                   piso: qrPrinter.piso,
                   estado: qrPrinter.estado,
+                  toner: qrPrinter.toner,
+                  unidad_imagen: qrPrinter.unidad_imagen,
                 })}
                 size={180}
                 level="M"
@@ -211,6 +213,8 @@ export default function Printers() {
                 <div><span className="font-medium text-muted-foreground">Edificio:</span> {qrPrinter.edificio || "—"}</div>
                 <div><span className="font-medium text-muted-foreground">Piso:</span> {qrPrinter.piso || "—"}</div>
                 <div><span className="font-medium text-muted-foreground">Conexión:</span> {qrPrinter.conexion || "—"}</div>
+                <div className="col-span-2 border-t pt-1 mt-1"><span className="font-medium text-muted-foreground">Toner:</span> {qrPrinter.toner || "—"}</div>
+                <div className="col-span-2"><span className="font-medium text-muted-foreground">Unidad de imagen:</span> {qrPrinter.unidad_imagen || "—"}</div>
               </div>
               <Button
                 variant="outline"
@@ -223,8 +227,10 @@ export default function Printers() {
                    qrPrinter.sector ? `Sector: ${qrPrinter.sector}` : "",
                    qrPrinter.edificio ? `Edificio: ${qrPrinter.edificio} · Piso: ${qrPrinter.piso || "—"}` : "",
                    `Estado: ${estadoMap[qrPrinter.estado]?.label || qrPrinter.estado}`,
+                   qrPrinter.toner ? `Toner: ${qrPrinter.toner}` : "",
+                   qrPrinter.unidad_imagen ? `Unidad de imagen: ${qrPrinter.unidad_imagen}` : "",
                   ].filter(Boolean).map(t => `<p style="margin:2px 0;font-size:11px">${t}</p>`).join("");
-                  const qrData = encodeURIComponent(JSON.stringify({ id: qrPrinter.printer_id, modelo: qrPrinter.modelo }));
+                  const qrData = encodeURIComponent(JSON.stringify({ id: qrPrinter.printer_id, modelo: qrPrinter.modelo, toner: qrPrinter.toner, unidad_imagen: qrPrinter.unidad_imagen }));
                   printWin.document.write(`<html><head><title>QR ${qrPrinter.printer_id}</title>
                     <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;margin:0;gap:8px;}p{margin:0;}</style>
                     </head><body>${info}
