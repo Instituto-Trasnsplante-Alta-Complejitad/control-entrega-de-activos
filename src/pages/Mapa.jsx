@@ -55,20 +55,19 @@ export default function Mapa() {
     queryFn: () => base44.entities.MapaPunto.filter({ plano_id: activePlanoId }, "-updated_date", 500),
     enabled: !!activePlanoId,
   });
-  const equipQ = useQuery({
-    queryKey: ["equipment-map"],
-    queryFn: () => base44.entities.Equipment.list("-updated_date", 2000),
-  });
-  const printerQ = useQuery({
-    queryKey: ["printers-map"],
-    queryFn: () => base44.entities.Printer.list("-updated_date", 500),
+  const mapDataQ = useQuery({
+    queryKey: ["map-data"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMapData", {});
+      return res.data;
+    },
   });
 
   const sedes = sedesQ.data || [];
   const planos = planosQ.data || [];
   const puntos = puntosQ.data || [];
-  const equipment = equipQ.data || [];
-  const printers = printerQ.data || [];
+  const equipment = mapDataQ.data?.equipment || [];
+  const printers = mapDataQ.data?.printers || [];
   const equiposById = useMemo(() => Object.fromEntries(equipment.map((e) => [e.id, e])), [equipment]);
   const impresorasById = useMemo(() => Object.fromEntries(printers.map((p) => [p.id, p])), [printers]);
   const activePlano = planos.find((p) => p.id === activePlanoId) || planos[0];
