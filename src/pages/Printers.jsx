@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Search, Pencil, Trash2, QrCode, Printer as PrinterIcon } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, QrCode, Printer as PrinterIcon, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
@@ -29,6 +30,7 @@ export default function Printers() {
   const [edificioFilter, setEdificioFilter] = useState("all");
   const { user, canEdit, canDelete } = useCurrentUser();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: printers = [], isLoading } = useQuery({
     queryKey: ["printers"],
@@ -146,6 +148,9 @@ export default function Printers() {
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" title="QR" onClick={() => setQrPrinter(p)}>
                           <QrCode className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver en mapa" onClick={() => navigate(`/mapa?impresora=${p.id}`)}>
+                          <MapPin className="w-3.5 h-3.5" />
                         </Button>
                         {canEdit && (
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(p); setShowForm(true); }}>

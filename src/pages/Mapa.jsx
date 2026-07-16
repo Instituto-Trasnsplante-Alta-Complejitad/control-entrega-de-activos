@@ -44,6 +44,7 @@ export default function Mapa() {
   const [highlightPuntoId, setHighlightPuntoId] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const locateEquipoId = searchParams.get("equipo");
+  const locateImpresoraId = searchParams.get("impresora");
   const autoOpenedRef = useRef(null);
   const [pendingPlanoId, setPendingPlanoId] = useState(null);
 
@@ -69,17 +70,23 @@ export default function Mapa() {
     },
   });
   const locationQ = useQuery({
-    queryKey: ["locate-equipo", locateEquipoId],
+    queryKey: ["locate-map", locateEquipoId, locateImpresoraId],
     queryFn: async () => {
       const [allPlanos, allPuntos] = await Promise.all([
         base44.entities.MapaPlano.list("orden", 500),
         base44.entities.MapaPunto.list("-updated_date", 3000),
       ]);
-      const punto = allPuntos.find((p) => getPuntoItems(p).some((it) => it.id === locateEquipoId));
+      const match = (p) => {
+        const items = getPuntoItems(p);
+        if (locateEquipoId) return items.some((it) => it.tipo === "equipo" && it.id === locateEquipoId);
+        if (locateImpresoraId) return items.some((it) => it.tipo === "impresora" && it.id === locateImpresoraId);
+        return false;
+      };
+      const punto = allPuntos.find(match);
       const plano = punto ? allPlanos.find((pl) => pl.id === punto.plano_id) : null;
       return { punto, plano };
     },
-    enabled: !!locateEquipoId,
+    enabled: !!(locateEquipoId || locateImpresoraId),
   });
 
   const sedes = sedesQ.data || [];
@@ -112,7 +119,7 @@ export default function Mapa() {
 
   // ── Localización desde /mapa?equipo=<id> ──
   useEffect(() => {
-    if (!locateEquipoId || !locationQ.data) return;
+    if (!locationQ.data) return;
     const { punto, plano } = locationQ.data;
     if (punto && plano) {
       setActiveSedeId(plano.sede_id);
@@ -120,10 +127,10 @@ export default function Mapa() {
       setHighlightPuntoId(punto.id);
       autoOpenedRef.current = null;
     } else {
-      toast({ title: "El equipo no está mapeado en ningún plano", variant: "destructive" });
+      toast({ title: "No está mapeado en ningún plano", variant: "destructive" });
     }
     setSearchParams({}, { replace: true });
-  }, [locateEquipoId, locationQ.data]);
+  }, [locationQ.data]);
 
   useEffect(() => {
     if (pendingPlanoId && planos.length && planos.find((p) => p.id === pendingPlanoId)) {
