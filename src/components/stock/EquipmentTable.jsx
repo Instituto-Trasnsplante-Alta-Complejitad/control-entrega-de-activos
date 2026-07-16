@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QrCode, Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Printer } from "lucide-react";
+import { QrCode, Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Printer, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 
 const statusMap = {
@@ -57,6 +58,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
   const [sortField, setSortField] = useState("asset_number");
   const [sortDir, setSortDir] = useState("asc");
   const [qrItem, setQrItem] = useState(null);
+  const navigate = useNavigate();
 
   const handleSort = (field) => {
     if (highlightSpec) return; // cuando hay filtro hardware activo, no permitir re-orden
@@ -137,6 +139,9 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQrItem(item)} title="QR">
                       <QrCode className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/mapa?equipo=${item.id}`)} title="Ver en mapa">
+                      <MapPin className="w-3.5 h-3.5" />
                     </Button>
                     {canEdit && onEdit && (
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}>

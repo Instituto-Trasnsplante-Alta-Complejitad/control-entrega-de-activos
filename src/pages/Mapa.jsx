@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useSearchParams } from "react-router-dom";
 import { Loader2, Map as MapIcon } from "lucide-react";
 import {
   AlertDialog,
@@ -40,6 +41,11 @@ export default function Mapa() {
   const [detail, setDetail] = useState({ open: false, punto: null });
   const [confirmSede, setConfirmSede] = useState(null);
   const [confirmDeletePunto, setConfirmDeletePunto] = useState(null);
+  const [highlightPuntoId, setHighlightPuntoId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const locateEquipoId = searchParams.get("equipo");
+  const autoOpenedRef = useRef(null);
+  const [pendingPlanoId, setPendingPlanoId] = useState(null);
 
   const sedesQ = useQuery({
     queryKey: ["sedes"],
@@ -62,6 +68,19 @@ export default function Mapa() {
       return res.data;
     },
   });
+  const locationQ = useQuery({
+    queryKey: ["locate-equipo", locateEquipoId],
+    queryFn: async () => {
+      const [allPlanos, allPuntos] = await Promise.all([
+        base44.entities.MapaPlano.list("orden", 500),
+        base44.entities.MapaPunto.list("-updated_date", 3000),
+      ]);
+      const punto = allPuntos.find((p) => getPuntoItems(p).some((it) => it.id === locateEquipoId));
+      const plano = punto ? allPlanos.find((pl) => pl.id === punto.plano_id) : null;
+      return { punto, plano };
+    },
+    enabled: !!locateEquipoId,
+  });
 
   const sedes = sedesQ.data || [];
   const planos = planosQ.data || [];
@@ -78,8 +97,8 @@ export default function Mapa() {
   }, [sedes, activeSedeId]);
 
   useEffect(() => {
-    setActivePlanoId(null);
-  }, [activeSedeId]);
+    if (!pendingPlanoId) setActivePlanoId(null);
+  }, [activeSedeId, pendingPlanoId]);
 
   useEffect(() => {
     if (activeSedeId && planos.length && !planos.find((p) => p.id === activePlanoId)) {
@@ -90,6 +109,38 @@ export default function Mapa() {
   useEffect(() => {
     setMode("view");
   }, [activePlanoId]);
+
+  // ── Localización desde /mapa?equipo=<id> ──
+  useEffect(() => {
+    if (!locateEquipoId || !locationQ.data) return;
+    const { punto, plano } = locationQ.data;
+    if (punto && plano) {
+      setActiveSedeId(plano.sede_id);
+      setPendingPlanoId(plano.id);
+      setHighlightPuntoId(punto.id);
+      autoOpenedRef.current = null;
+    } else {
+      toast({ title: "El equipo no está mapeado en ningún plano", variant: "destructive" });
+    }
+    setSearchParams({}, { replace: true });
+  }, [locateEquipoId, locationQ.data]);
+
+  useEffect(() => {
+    if (pendingPlanoId && planos.length && planos.find((p) => p.id === pendingPlanoId)) {
+      setActivePlanoId(pendingPlanoId);
+      setPendingPlanoId(null);
+    }
+  }, [pendingPlanoId, planos]);
+
+  useEffect(() => {
+    if (highlightPuntoId && puntos.length && !detail.open && autoOpenedRef.current !== highlightPuntoId) {
+      const p = puntos.find((x) => x.id === highlightPuntoId);
+      if (p) {
+        setDetail({ open: true, punto: p });
+        autoOpenedRef.current = highlightPuntoId;
+      }
+    }
+  }, [highlightPuntoId, puntos, detail.open]);
 
   // ── Mutaciones sedes ──
   const createSede = useMutation({
@@ -146,6 +197,9 @@ export default function Mapa() {
   });
 
   // ── Handlers ──
+  const selectSede = (id) => { setHighlightPuntoId(null); setActiveSedeId(id); };
+  const selectPlano = (id) => { setHighlightPuntoId(null); setActivePlanoId(id); };
+
   const onMovePoint = (id, x, y) => {
     qc.setQueryData(["puntos", activePlanoId], (old) => (old || []).map((p) => (p.id === id ? { ...p, x, y } : p)));
   };
@@ -221,7 +275,7 @@ export default function Mapa() {
           <SedeSelector
             sedes={sedes}
             activeId={activeSedeId}
-            onSelect={setActiveSedeId}
+            onSelect={selectSede}
             canEdit={canManageMapa}
             onAdd={() => setSedeForm({ open: true, initial: null })}
             onEdit={() => {
@@ -261,7 +315,7 @@ export default function Mapa() {
             <PlanoTabs
               planos={planos}
               activeId={activePlano?.id}
-              onSelect={setActivePlanoId}
+              onSelect={selectPlano}
               canEdit={canManageMapa}
               onAdd={() => setPlanoForm(true)}
               onDeleteActive={() => activePlano && deletePlano.mutate(activePlano.id)}
@@ -292,6 +346,7 @@ export default function Mapa() {
                   equiposById={equiposById}
                   impresorasById={impresorasById}
                   mode={mode}
+                  highlightPuntoId={highlightPuntoId}
                   onAddPoint={onAddPoint}
                   onMovePoint={onMovePoint}
                   onMoveEnd={onMoveEnd}

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function PuntoMarker({ label, color, count, style, onPointerDown }) {
+export default function PuntoMarker({ label, color, count, style, onPointerDown, highlight }) {
   const [showTip, setShowTip] = useState(false);
 
   return (
@@ -9,8 +9,13 @@ export default function PuntoMarker({ label, color, count, style, onPointerDown 
       style={style}
       onPointerDown={onPointerDown}
     >
+      {highlight && (
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-primary/40 animate-ping pointer-events-none" />
+      )}
       <div
-        className={`relative w-4 h-4 rounded-full ${color} border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-transform`}
+        className={`relative w-4 h-4 rounded-full ${color} border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-transform ${
+          highlight ? "ring-2 ring-primary ring-offset-2 ring-offset-white z-20" : ""
+        }`}
         onMouseEnter={() => setShowTip(true)}
         onMouseLeave={() => setShowTip(false)}
       >

@@ -25,6 +25,7 @@ export default function MapVisualizer({
   onMovePoint,
   onMoveEnd,
   fullscreen,
+  highlightPuntoId,
 }) {
   const containerRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -215,14 +216,15 @@ export default function MapVisualizer({
                   .map((it) => itemLabel(it, equiposById, impresorasById))
                   .join(", ");
                 return (
-                  <PuntoMarker
-                    key={p.id}
-                    label={label}
-                    color={color}
-                    count={items.length}
-                    style={{ left: `${p.x}%`, top: `${p.y}%` }}
-                    onPointerDown={(e) => onPointPointerDown(e, p)}
-                  />
+                <PuntoMarker
+                  key={p.id}
+                  label={label}
+                  color={color}
+                  count={items.length}
+                  style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                  onPointerDown={(e) => onPointPointerDown(e, p)}
+                  highlight={p.id === highlightPuntoId}
+                />
                 );
               })}
             </div>
