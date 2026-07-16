@@ -139,15 +139,7 @@ export default function Mapa() {
     }
   }, [pendingPlanoId, planos]);
 
-  useEffect(() => {
-    if (highlightPuntoId && puntos.length && !detail.open && autoOpenedRef.current !== highlightPuntoId) {
-      const p = puntos.find((x) => x.id === highlightPuntoId);
-      if (p) {
-        setDetail({ open: true, punto: p });
-        autoOpenedRef.current = highlightPuntoId;
-      }
-    }
-  }, [highlightPuntoId, puntos, detail.open]);
+  // Al localizar desde Stock/Impresoras solo resaltamos el punto, sin abrir el detalle.
 
   // ── Mutaciones sedes ──
   const createSede = useMutation({
