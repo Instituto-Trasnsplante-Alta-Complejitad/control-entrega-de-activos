@@ -63,7 +63,19 @@
     },
     "department": {
       "type": "string",
-      "description": "Ubicaci\u00f3n / Sector"
+      "description": "Ubicaci\u00f3n / Sector (legacy)"
+    },
+    "sede_id": {
+      "type": "string",
+      "description": "ID de la sede donde est\u00e1 ubicado el equipo"
+    },
+    "plano_id": {
+      "type": "string",
+      "description": "ID del plano donde est\u00e1 ubicado el equipo"
+    },
+    "ubicacion_detalle": {
+      "type": "string",
+      "description": "Detalle de ubicaci\u00f3n (\u00e1rea, consultorio, puesto)"
     },
     "delivery_date": {
       "type": "string",

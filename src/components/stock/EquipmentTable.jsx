@@ -53,7 +53,15 @@ const SPEC_LABELS = {
   storage_capacity: "Almacenamiento",
 };
 
-export default function EquipmentTable({ equipment, onEdit, onDelete, highlightSpec }) {
+export default function EquipmentTable({ equipment, onEdit, onDelete, highlightSpec, sedesMap = {}, planosMap = {} }) {
+  const ubicacionLabel = (item) => {
+    const parts = [];
+    if (item.sede_id && sedesMap[item.sede_id]) parts.push(sedesMap[item.sede_id]);
+    if (item.plano_id && planosMap[item.plano_id]) parts.push(planosMap[item.plano_id]);
+    if (item.ubicacion_detalle) parts.push(item.ubicacion_detalle);
+    if (parts.length) return parts.join(" · ");
+    return item.department || "—";
+  };
   const { canEdit, canDelete } = useCurrentUser();
   const [sortField, setSortField] = useState("asset_number");
   const [sortDir, setSortDir] = useState("asc");
@@ -104,7 +112,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
             {th("N° Serie", "serial_number", "hidden md:table-cell max-w-[130px]")}
             {th("Apellido y Nombre", "assigned_to", "hidden lg:table-cell max-w-[150px]")}
             {th("Usuario", "username", "hidden xl:table-cell w-24")}
-            {th("Sector", "department", "hidden xl:table-cell max-w-[120px]")}
+            {th("Ubicación", "department", "hidden xl:table-cell max-w-[160px]")}
             {highlightSpec && (
               <TableHead className="font-semibold w-24 text-primary">{SPEC_LABELS[highlightSpec] || highlightSpec}</TableHead>
             )}
@@ -124,7 +132,7 @@ export default function EquipmentTable({ equipment, onEdit, onDelete, highlightS
                 <TableCell className="hidden md:table-cell font-mono text-xs max-w-[130px] truncate" title={isGarbled(item.serial_number) ? "" : item.serial_number}>{safeVal(item.serial_number, 20)}</TableCell>
                 <TableCell className="hidden lg:table-cell text-sm max-w-[150px] truncate" title={item.assigned_to}>{item.assigned_to || "—"}</TableCell>
                 <TableCell className="hidden xl:table-cell font-mono text-xs">{item.username || "—"}</TableCell>
-                <TableCell className="hidden xl:table-cell text-sm max-w-[120px] truncate" title={item.department}>{item.department || "—"}</TableCell>
+                <TableCell className="hidden xl:table-cell text-sm max-w-[160px] truncate" title={ubicacionLabel(item)}>{ubicacionLabel(item)}</TableCell>
                 {highlightSpec && (
                   <TableCell className="font-semibold text-sm text-primary">
                     {item[highlightSpec] || "—"}

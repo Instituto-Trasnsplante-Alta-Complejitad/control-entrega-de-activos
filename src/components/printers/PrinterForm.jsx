@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +33,23 @@ const CONSUMIBLES_CATALOGO = {
 
 const defaults = {
   printer_id: "", numero: "", marca: "", modelo: "", piso: "", sector: "",
-  edificio: "", conexion: "", toner: "", unidad_imagen: "", proveedor: "",
+  edificio: "", sede_id: "", plano_id: "", ubicacion_detalle: "",
+  conexion: "", toner: "", unidad_imagen: "", proveedor: "",
   notas: "", estado: "activa",
 };
 
 export default function PrinterForm({ open, onClose, onSubmit, printer }) {
   const [form, setForm] = useState(defaults);
+
+  const { data: sedes = [] } = useQuery({
+    queryKey: ["sedes"],
+    queryFn: () => base44.entities.Sede.list("nombre", 200),
+  });
+  const { data: planosSede = [] } = useQuery({
+    queryKey: ["planos", form.sede_id],
+    queryFn: () => (form.sede_id ? base44.entities.MapaPlano.filter({ sede_id: form.sede_id }, "orden", 200) : []),
+    enabled: !!form.sede_id,
+  });
 
   useEffect(() => {
     setForm(printer ? { ...defaults, ...printer } : defaults);
@@ -97,6 +110,37 @@ export default function PrinterForm({ open, onClose, onSubmit, printer }) {
               <Label>Edificio</Label>
               <Input value={form.edificio} onChange={(e) => set("edificio", e.target.value)} placeholder="clinica, adm, anexo..." />
             </div>
+          </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold mb-3">Ubicación (sede / plano)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Sede</Label>
+                <Select value={form.sede_id || ""} onValueChange={(v) => { set("sede_id", v); set("plano_id", ""); }}>
+                  <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>Sin asignar</SelectItem>
+                    {sedes.map((s) => <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Plano</Label>
+                <Select value={form.plano_id || ""} onValueChange={(v) => set("plano_id", v)} disabled={!form.sede_id}>
+                  <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>Sin asignar</SelectItem>
+                    {planosSede.map((p) => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label>Área / Consultorio</Label>
+                <Input value={form.ubicacion_detalle} onChange={(e) => set("ubicacion_detalle", e.target.value)} placeholder="Ej: Recepción, Pasillo B..." />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Conexión / IP</Label>
               <Input value={form.conexion} onChange={(e) => set("conexion", e.target.value)} placeholder="10.0.0.1 o cable" />

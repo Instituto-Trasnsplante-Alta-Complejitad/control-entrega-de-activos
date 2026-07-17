@@ -36,6 +36,24 @@ export default function Printers() {
     queryKey: ["printers"],
     queryFn: () => base44.entities.Printer.list("numero", 500),
   });
+  const { data: sedes = [] } = useQuery({
+    queryKey: ["sedes"],
+    queryFn: () => base44.entities.Sede.list("nombre", 200),
+  });
+  const { data: planos = [] } = useQuery({
+    queryKey: ["planos-all"],
+    queryFn: () => base44.entities.MapaPlano.list("orden", 500),
+  });
+  const sedesMap = Object.fromEntries(sedes.map((s) => [s.id, s.nombre]));
+  const planosMap = Object.fromEntries(planos.map((p) => [p.id, p.nombre]));
+  const ubicacionLabel = (p) => {
+    const parts = [];
+    if (p.sede_id && sedesMap[p.sede_id]) parts.push(sedesMap[p.sede_id]);
+    if (p.plano_id && planosMap[p.plano_id]) parts.push(planosMap[p.plano_id]);
+    if (p.ubicacion_detalle) parts.push(p.ubicacion_detalle);
+    if (parts.length) return parts.join(" · ");
+    return "—";
+  };
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Printer.create(data),
@@ -125,6 +143,7 @@ export default function Printers() {
                 <TableHead className="font-semibold hidden md:table-cell">Sector</TableHead>
                 <TableHead className="font-semibold hidden lg:table-cell">Edificio</TableHead>
                 <TableHead className="font-semibold hidden lg:table-cell">Conexión/IP</TableHead>
+                <TableHead className="font-semibold hidden lg:table-cell">Ubicación</TableHead>
                 <TableHead className="font-semibold w-24">Estado</TableHead>
                 <TableHead className="font-semibold text-right w-20">Acc.</TableHead>
               </TableRow>
@@ -141,6 +160,7 @@ export default function Printers() {
                     <TableCell className="hidden md:table-cell text-sm max-w-[120px] truncate" title={p.sector}>{p.sector || "—"}</TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">{p.edificio || "—"}</TableCell>
                     <TableCell className="hidden lg:table-cell font-mono text-xs">{p.conexion || "—"}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm max-w-[160px] truncate" title={ubicacionLabel(p)}>{ubicacionLabel(p)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={estado.className}>{estado.label}</Badge>
                     </TableCell>
@@ -169,7 +189,7 @@ export default function Printers() {
               })}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No hay impresoras registradas</TableCell>
+                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">No hay impresoras registradas</TableCell>
                 </TableRow>
               )}
             </TableBody>

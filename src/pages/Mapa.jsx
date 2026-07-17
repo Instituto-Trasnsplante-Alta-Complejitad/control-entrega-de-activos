@@ -224,20 +224,42 @@ export default function Mapa() {
     }
   };
 
-  const savePunto = (data) => {
-    if (puntoForm.initial?.id) {
-      updatePunto.mutate({ id: puntoForm.initial.id, data: { items: data.items, observacion: data.observacion } });
-    } else if (puntoForm.pendingXY) {
-      createPunto.mutate({
-        sede_id: activeSedeId,
-        plano_id: activePlano.id,
-        items: data.items,
-        x: puntoForm.pendingXY.x,
-        y: puntoForm.pendingXY.y,
-        observacion: data.observacion,
-      });
+  const syncItemUbicacion = async (items, prevItems, sedeId, planoId) => {
+    const ent = (tipo) => (tipo === "impresora" ? "Printer" : "Equipment");
+    if (prevItems && prevItems.length) {
+      for (const it of prevItems) {
+        if (!items.some((i) => i.tipo === it.tipo && i.id === it.id)) {
+          try { await base44.entities[ent(it.tipo)].update(it.id, { sede_id: "", plano_id: "" }); } catch {}
+        }
+      }
     }
-    setPuntoForm({ open: false, pendingXY: null, initial: null });
+    for (const it of items) {
+      try { await base44.entities[ent(it.tipo)].update(it.id, { sede_id: sedeId, plano_id: planoId }); } catch {}
+    }
+  };
+
+  const savePunto = async (data) => {
+    const prevItems = puntoForm.initial?.items;
+    try {
+      if (puntoForm.initial?.id) {
+        await updatePunto.mutateAsync({ id: puntoForm.initial.id, data: { items: data.items, observacion: data.observacion } });
+        await syncItemUbicacion(data.items, prevItems, activeSedeId, activePlano?.id);
+      } else if (puntoForm.pendingXY) {
+        await createPunto.mutateAsync({
+          sede_id: activeSedeId,
+          plano_id: activePlano.id,
+          items: data.items,
+          x: puntoForm.pendingXY.x,
+          y: puntoForm.pendingXY.y,
+          observacion: data.observacion,
+        });
+        await syncItemUbicacion(data.items, null, activeSedeId, activePlano?.id);
+      }
+    } finally {
+      setPuntoForm({ open: false, pendingXY: null, initial: null });
+      qc.invalidateQueries({ queryKey: ["equipment"] });
+      qc.invalidateQueries({ queryKey: ["printers"] });
+    }
   };
 
   const editFromDetail = () => {

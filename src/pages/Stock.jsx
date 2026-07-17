@@ -31,6 +31,16 @@ export default function Stock() {
     queryKey: ["equipment"],
     queryFn: () => base44.entities.Equipment.list("asset_number", 500),
   });
+  const { data: sedes = [] } = useQuery({
+    queryKey: ["sedes"],
+    queryFn: () => base44.entities.Sede.list("nombre", 200),
+  });
+  const { data: planos = [] } = useQuery({
+    queryKey: ["planos-all"],
+    queryFn: () => base44.entities.MapaPlano.list("orden", 500),
+  });
+  const sedesMap = Object.fromEntries(sedes.map((s) => [s.id, s.nombre]));
+  const planosMap = Object.fromEntries(planos.map((p) => [p.id, p.nombre]));
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Equipment.create(data),
@@ -211,6 +221,8 @@ export default function Stock() {
           onEdit={canEdit ? (item) => { setEditing(item); setShowForm(true); } : null}
           onDelete={canDelete ? (item) => setDeleting(item) : null}
           highlightSpec={hwSpecField}
+          sedesMap={sedesMap}
+          planosMap={planosMap}
         />
       )}
 

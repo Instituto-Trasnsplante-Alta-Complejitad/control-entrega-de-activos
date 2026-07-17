@@ -25,6 +25,18 @@
     "edificio": {
       "type": "string"
     },
+    "sede_id": {
+      "type": "string",
+      "description": "ID de la sede donde est\u00e1 ubicada la impresora"
+    },
+    "plano_id": {
+      "type": "string",
+      "description": "ID del plano donde est\u00e1 ubicada la impresora"
+    },
+    "ubicacion_detalle": {
+      "type": "string",
+      "description": "Detalle de ubicaci\u00f3n (\u00e1rea, consultorio, puesto)"
+    },
     "conexion": {
       "type": "string",
       "description": "IP o tipo de conexi\u00f3n"
