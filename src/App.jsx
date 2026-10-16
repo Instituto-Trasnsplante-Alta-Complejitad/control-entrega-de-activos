@@ -15,6 +15,7 @@ import Contracts from '@/pages/Contracts';
 import EquipmentDetail from '@/pages/EquipmentDetail';
 import Printers from '@/pages/Printers';
 import Mapa from '@/pages/Mapa';
+import { appBasePath } from '@/lib/app-path';
 
 
 const AuthenticatedApp = () => {
@@ -62,7 +63,7 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
+        <Router basename={appBasePath || "/"}>
           <AuthenticatedApp />
         </Router>
         <Toaster />

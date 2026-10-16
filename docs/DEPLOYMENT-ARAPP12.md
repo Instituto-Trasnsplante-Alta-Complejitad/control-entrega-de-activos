@@ -12,7 +12,7 @@ posterior, después de validar la aplicación.
 - PostgreSQL: usa una base y dos roles exclusivos para esta aplicación.
 - Keycloak: autentica contra el realm `itac` y entrega los grupos de AD.
 
-URL prevista: `https://activos.ad.itac.com.ar`
+URL prevista: `https://apps.ad.itac.com.ar/activos`
 
 OAuth2 Proxy conserva el issuer y la URL de inicio de sesión públicos, pero
 utiliza los endpoints internos `http://keycloak:8080` para canjear códigos y
@@ -21,10 +21,10 @@ ARAPP12 mediante la IP externa del servidor.
 
 ## Requisitos previos
 
-1. DNS interno para `activos.ad.itac.com.ar` apuntando a ARAPP12.
+1. El host existente `apps.ad.itac.com.ar` debe apuntar a ARAPP12.
 2. Cliente confidencial de Keycloak llamado `control-entrega-activos`.
 3. Redirect URI exacta:
-   `https://activos.ad.itac.com.ar/oauth2/callback`.
+   `https://apps.ad.itac.com.ar/activos/oauth2/callback`.
 4. Grupo de acceso y administración: `/ARR-ITAC-IT`.
 5. Base PostgreSQL `control_entrega_activos`.
 6. Roles PostgreSQL separados:
@@ -63,12 +63,31 @@ sudo docker compose up -d app auth
 sudo docker compose ps
 ```
 
-Caddy debe enviar el host al contenedor de autenticación:
+Caddy debe enviar solamente la ruta `/activos` al contenedor de autenticación.
+La ruta de OAuth se conserva completa y el prefijo se elimina para el resto de
+la aplicación:
 
 ```caddyfile
-activos.ad.itac.com.ar {
+apps.ad.itac.com.ar {
     tls internal
-    reverse_proxy control-entrega-activos-auth:4180
+
+    handle /auth* {
+        reverse_proxy keycloak:8080
+    }
+
+    redir /activos /activos/ 308
+
+    handle /activos/oauth2/* {
+        reverse_proxy control-entrega-activos-auth:4180
+    }
+
+    handle_path /activos/* {
+        reverse_proxy control-entrega-activos-auth:4180
+    }
+
+    handle {
+        reverse_proxy portal-itac:3000
+    }
 }
 ```
 
@@ -77,7 +96,7 @@ Después de validar la configuración, reiniciar Caddy para cargarla.
 ## Validación
 
 - La aplicación y el proxy permanecen en estado `running`.
-- `https://activos.ad.itac.com.ar` redirige a Keycloak.
+- `https://apps.ad.itac.com.ar/activos` redirige a Keycloak.
 - Un integrante de `/ARR-ITAC-IT` puede ingresar y administrar datos.
 - Un usuario no habilitado recibe acceso denegado.
 - La base está vacía excepto por el usuario registrado durante la prueba.

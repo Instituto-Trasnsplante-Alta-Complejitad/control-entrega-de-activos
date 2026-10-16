@@ -17,6 +17,7 @@ const distPath = path.join(projectRoot, "dist");
 const storagePath = path.resolve(process.env.STORAGE_PATH || path.join(projectRoot, "storage"));
 const uploadPath = path.join(storagePath, "uploads");
 const port = Number(process.env.PORT || 8080);
+const appBasePath = `/${String(process.env.APP_BASE_PATH || "").replace(/^\/+|\/+$/g, "")}`.replace(/^\/$/, "");
 
 fs.mkdirSync(uploadPath, { recursive: true });
 
@@ -203,7 +204,7 @@ app.post("/api/functions/generateContractPdf", asyncRoute(async (req, res) => {
 
 app.post("/api/uploads", requireAdmin, upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "Archivo requerido" });
-  res.status(201).json({ file_url: `/uploads/${encodeURIComponent(req.file.filename)}` });
+  res.status(201).json({ file_url: `${appBasePath}/uploads/${encodeURIComponent(req.file.filename)}` });
 });
 
 app.use("/uploads", requireIdentity, express.static(uploadPath, { fallthrough: false }));

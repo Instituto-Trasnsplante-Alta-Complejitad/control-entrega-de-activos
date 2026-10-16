@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, FileText, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { withAppBasePath } from "@/lib/app-path";
 
 function generateContract(delivery) {
   const dateStr = delivery.delivery_date
@@ -71,7 +72,7 @@ export default function AcceptDelivery() {
       }
 
       const response = await fetch(
-        `/api/public/deliveries/${encodeURIComponent(deliveryId)}/acceptance?token=${encodeURIComponent(token)}`,
+        withAppBasePath(`/api/public/deliveries/${encodeURIComponent(deliveryId)}/acceptance?token=${encodeURIComponent(token)}`),
       );
       const found = response.ok ? await response.json() : null;
 
@@ -91,7 +92,7 @@ export default function AcceptDelivery() {
   const handleAccept = async () => {
     setProcessing(true);
     const token = new URLSearchParams(window.location.search).get("token");
-    const response = await fetch(`/api/public/deliveries/${encodeURIComponent(delivery.id)}/acceptance`, {
+    const response = await fetch(withAppBasePath(`/api/public/deliveries/${encodeURIComponent(delivery.id)}/acceptance`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, Map as MapIcon } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { withAppBasePath } from "@/lib/app-path";
 
 const navItems = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -19,7 +20,7 @@ export default function Sidebar() {
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-border min-h-screen p-4">
       <div className="mb-8 px-2">
         <img 
-          src="/itac-logo.jpg"
+          src={withAppBasePath("/itac-logo.jpg")}
           alt="ITAC Logo" 
           className="w-full max-w-[160px] object-contain"
         />

@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Monitor, Cpu, HardDrive, MonitorCheck } from "lucide-react";
+import { withAppBasePath } from "@/lib/app-path";
 
 const typeMap = {
   notebook: "Notebook", all_in_one: "All in One", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro",
@@ -62,7 +63,7 @@ export default function EquipmentDetail() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="text-center">
           <img
-            src="/itac-logo.jpg"
+            src={withAppBasePath("/itac-logo.jpg")}
             alt="ITAC Logo"
             className="h-10 mx-auto mb-4"
           />

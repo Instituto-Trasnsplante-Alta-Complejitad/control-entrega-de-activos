@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { withoutAppBasePath } from "@/lib/app-path";
 
 const AuthContext = createContext();
 const PUBLIC_PATHS = ["/aceptar"];
@@ -12,7 +13,8 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
 
   const checkUserAuth = useCallback(async () => {
-    if (PUBLIC_PATHS.some((path) => window.location.pathname.startsWith(path))) {
+    const applicationPath = withoutAppBasePath(window.location.pathname);
+    if (PUBLIC_PATHS.some((path) => applicationPath.startsWith(path))) {
       setIsLoadingAuth(false);
       setAuthChecked(true);
       return;
@@ -44,7 +46,7 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    if (shouldRedirect) base44.auth.logout(window.location.origin);
+    if (shouldRedirect) base44.auth.logout();
   };
 
   const navigateToLogin = () => base44.auth.redirectToLogin(window.location.href);

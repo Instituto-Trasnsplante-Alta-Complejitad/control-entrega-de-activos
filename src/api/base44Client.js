@@ -1,5 +1,7 @@
+import { withAppBasePath } from "@/lib/app-path";
+
 async function apiRequest(path, options = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(withAppBasePath(path), {
     credentials: "same-origin",
     ...options,
     headers: {
@@ -78,11 +80,11 @@ export const base44 = {
   entities,
   auth: {
     me: () => apiRequest("/api/auth/me"),
-    logout(returnTo = window.location.origin) {
-      window.location.assign(`/oauth2/sign_out?rd=${encodeURIComponent(returnTo)}`);
+    logout(returnTo = `${window.location.origin}${withAppBasePath("/")}`) {
+      window.location.assign(withAppBasePath(`/oauth2/sign_out?rd=${encodeURIComponent(returnTo)}`));
     },
     redirectToLogin(returnTo = window.location.href) {
-      window.location.assign(`/oauth2/start?rd=${encodeURIComponent(returnTo)}`);
+      window.location.assign(withAppBasePath(`/oauth2/start?rd=${encodeURIComponent(returnTo)}`));
     },
   },
   functions: {

@@ -15,6 +15,8 @@ RUN npm ci
 
 FROM dependencies AS builder
 
+ENV VITE_BASE_PATH=/activos/
+
 COPY . .
 RUN npm run build
 
