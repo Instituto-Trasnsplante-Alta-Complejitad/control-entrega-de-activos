@@ -68,6 +68,10 @@ services:
       - --cookie-samesite=lax
       - --redirect-url=https://activos.ad.itac.com.ar/oauth2/callback
       - --oidc-issuer-url=https://apps.ad.itac.com.ar/auth/realms/itac
+      - --skip-oidc-discovery=true
+      - --login-url=https://apps.ad.itac.com.ar/auth/realms/itac/protocol/openid-connect/auth
+      - --redeem-url=http://keycloak:8080/auth/realms/itac/protocol/openid-connect/token
+      - --oidc-jwks-url=http://keycloak:8080/auth/realms/itac/protocol/openid-connect/certs
       - --oidc-groups-claim=groups
       - --provider-ca-file=/etc/ssl/certs/ad-ITAC-CA.pem
       - --use-system-trust-store=true

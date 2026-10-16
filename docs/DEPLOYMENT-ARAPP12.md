@@ -14,6 +14,11 @@ posterior, después de validar la aplicación.
 
 URL prevista: `https://activos.ad.itac.com.ar`
 
+OAuth2 Proxy conserva el issuer y la URL de inicio de sesión públicos, pero
+utiliza los endpoints internos `http://keycloak:8080` para canjear códigos y
+validar firmas. Esto evita que un contenedor tenga que volver a ingresar a
+ARAPP12 mediante la IP externa del servidor.
+
 ## Requisitos previos
 
 1. DNS interno para `activos.ad.itac.com.ar` apuntando a ARAPP12.
