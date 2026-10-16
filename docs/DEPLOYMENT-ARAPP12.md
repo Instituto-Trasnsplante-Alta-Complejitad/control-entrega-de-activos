@@ -36,6 +36,11 @@ Los siguientes archivos deben existir únicamente en ARAPP12, bajo
 - `keycloak_client_secret`
 - `oauth_cookie_secret` (32 bytes aleatorios sin salto de línea)
 
+La carpeta `secrets` debe pertenecer a `root:root` con modo `0700`. Los
+archivos se mantienen en modo `0444` porque Docker Compose los monta dentro de
+contenedores que se ejecutan sin privilegios como UID `1001`; la carpeta padre
+impide que otros usuarios del host puedan acceder a ellos.
+
 El certificado de la CA interna debe quedar en:
 
 `/srv/docker/apps/control-entrega-activos/certs/ad-ITAC-CA.pem`
