@@ -21,6 +21,7 @@ export default function Exportar() {
   const [fileStatus, setFileStatus] = useState({ total: 0, done: 0, errors: 0, current: null });
   const [zipPercent, setZipPercent] = useState(0);
   const [summary, setSummary] = useState(null);
+  const [filesSummary, setFilesSummary] = useState(null);
   const [errors, setErrors] = useState([]);
   const [singleLoading, setSingleLoading] = useState(null);
 
@@ -29,6 +30,7 @@ export default function Exportar() {
     setFileStatus({ total: 0, done: 0, errors: 0, current: null });
     setZipPercent(0);
     setSummary(null);
+    setFilesSummary(null);
     setErrors([]);
   };
 
@@ -71,9 +73,10 @@ export default function Exportar() {
     reset();
     setRunning("files");
     try {
-      const { blob, errors: errs } = await buildFilesOnlyZip({ onProgress });
+      const { blob, errors: errs, downloaded, failed } = await buildFilesOnlyZip({ onProgress });
       const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       downloadBlob(blob, `archivos-${ts}.zip`);
+      setFilesSummary({ downloaded, failed, total: downloaded + failed });
       setErrors(errs);
     } catch (e) {
       setErrors([{ entity: "general", error: e.message }]);
@@ -284,6 +287,34 @@ export default function Exportar() {
                     {ent}: {count}
                   </Badge>
                 ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumen de archivos */}
+      {filesSummary && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              Resumen de archivos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-muted/40 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Descargados</p>
+                <p className="text-xl font-bold text-green-700">{filesSummary.downloaded}</p>
+              </div>
+              <div className="bg-muted/40 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Fallidos</p>
+                <p className="text-xl font-bold text-destructive">{filesSummary.failed}</p>
+              </div>
+              <div className="bg-muted/40 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Total referencias</p>
+                <p className="text-xl font-bold">{filesSummary.total}</p>
               </div>
             </div>
           </CardContent>

@@ -113,15 +113,19 @@ function guessExtension(url, contentType) {
 }
 
 /**
- * Descarga un archivo desde una URL y devuelve { blob, filename }.
+ * Calcula el hash SHA-256 de un ArrayBuffer (Web Crypto).
  */
-async function downloadFile(ref, index) {
-  const resp = await fetch(ref.url);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const blob = await resp.blob();
-  const ext = guessExtension(ref.url, blob.type);
-  const filename = `file_${String(index + 1).padStart(4, "0")}${ext}`;
-  return { blob, filename, contentType: blob.type, size: blob.size };
+async function sha256(arrayBuffer) {
+  const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Sanitiza un ID de registro para usarlo en un nombre de archivo seguro.
+ */
+function sanitizeId(id) {
+  return String(id || "unknown").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 48);
 }
 
 /**
@@ -163,8 +167,10 @@ export async function buildFullExport({ onProgress } = {}) {
   }
 
   // Descarga de archivos propios
-  const filesManifest = await downloadFilesIntoZip(zip, allFileRefs, { onProgress });
+  const { filesManifest, downloaded, failed } = await downloadFilesIntoZip(zip, allFileRefs, { onProgress });
   manifest.files_count = filesManifest.length;
+  manifest.files_downloaded = downloaded;
+  manifest.files_failed = failed;
 
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
   zip.file("files-manifest.json", JSON.stringify(filesManifest, null, 2));
@@ -196,7 +202,7 @@ export async function buildFilesOnlyZip({ onProgress } = {}) {
     }
   }
 
-  const filesManifest = await downloadFilesIntoZip(zip, allFileRefs, { onProgress });
+  const { filesManifest, downloaded, failed } = await downloadFilesIntoZip(zip, allFileRefs, { onProgress });
   zip.file("files-manifest.json", JSON.stringify(filesManifest, null, 2));
 
   const blob = await zip.generateAsync(
@@ -204,7 +210,7 @@ export async function buildFilesOnlyZip({ onProgress } = {}) {
     (meta) => onProgress?.({ type: "zipping", percent: Math.round(meta.percent) })
   );
 
-  return { blob, filesManifest, errors };
+  return { blob, filesManifest, errors, downloaded, failed };
 }
 
 /**
@@ -213,44 +219,56 @@ export async function buildFilesOnlyZip({ onProgress } = {}) {
  */
 async function downloadFilesIntoZip(zip, fileRefs, { onProgress } = {}) {
   const filesManifest = [];
-  const errors = [];
-  // Deduplica por URL conservando la primera referencia
-  const unique = [];
-  const seen = new Set();
-  for (const ref of fileRefs) {
-    if (!seen.has(ref.url)) {
-      seen.add(ref.url);
-      unique.push(ref);
-    }
-  }
+  let downloaded = 0;
+  let failed = 0;
 
-  for (let i = 0; i < unique.length; i++) {
-    const ref = unique[i];
-    onProgress?.({ type: "file", index: i, total: unique.length, url: ref.url, status: "loading" });
+  for (let i = 0; i < fileRefs.length; i++) {
+    const ref = fileRefs[i];
+    onProgress?.({ type: "file", index: i, total: fileRefs.length, url: ref.url, status: "loading" });
+
+    const baseName = `${ref.entity}_${sanitizeId(ref.record_id)}_${ref.field}`;
+    const entry = {
+      entidad_origen: ref.entity,
+      registro_id: ref.record_id,
+      campo: ref.field,
+      url_original: ref.url,
+      ruta_relativa: null,
+      nombre_archivo: null,
+      tipo_mime: null,
+      tamaño_bytes: null,
+      hash_sha256: null,
+      estado: "pendiente",
+      error: null,
+    };
+
     try {
-      const { blob, filename, contentType, size } = await downloadFile(ref, i);
-      zip.file(`files/${filename}`, blob);
-      const usedBy = fileRefs
-        .filter((f) => f.url === ref.url)
-        .map((f) => ({ entity: f.entity, record_id: f.record_id, field: f.field }));
-      filesManifest.push({
-        original_url: ref.url,
-        filename,
-        content_type: contentType,
-        size,
-        used_by: usedBy,
-      });
-      onProgress?.({ type: "file", index: i, total: unique.length, status: "done" });
+      const resp = await fetch(ref.url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const hash = await sha256(arrayBuffer);
+      const ext = guessExtension(ref.url, blob.type);
+      const filename = `${baseName}${ext}`;
+      const relPath = `files/${filename}`;
+      zip.file(relPath, blob);
+      entry.ruta_relativa = relPath;
+      entry.nombre_archivo = filename;
+      entry.tipo_mime = blob.type || null;
+      entry.tamaño_bytes = blob.size;
+      entry.hash_sha256 = hash;
+      entry.estado = "ok";
+      downloaded += 1;
+      onProgress?.({ type: "file", index: i, total: fileRefs.length, status: "done" });
     } catch (e) {
-      errors.push({ file: ref.url, error: e.message });
-      onProgress?.({ type: "file", index: i, total: unique.length, status: "error", error: e.message });
+      entry.estado = "error";
+      entry.error = e.message;
+      failed += 1;
+      onProgress?.({ type: "file", index: i, total: fileRefs.length, status: "error", error: e.message });
     }
+    filesManifest.push(entry);
   }
 
-  if (errors.length) {
-    zip.file("files-errors.json", JSON.stringify(errors, null, 2));
-  }
-  return filesManifest;
+  return { filesManifest, downloaded, failed };
 }
 
 /**
