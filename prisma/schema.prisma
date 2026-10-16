@@ -1,0 +1,356 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AppUser {
+  id          String   @id @default(uuid())
+  issuer      String
+  subject     String
+  email       String?
+  displayName String?
+  realmRoles  Json     @default("[]")
+  groups      Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([issuer, subject])
+  @@index([email])
+  @@map("app_user")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  usuario_email  String
+  usuario_nombre String?
+  accion         String
+  entidad        String
+  entidad_id     String?
+  entidad_label  String?
+  valor_anterior String?
+  valor_nuevo    String?
+  observacion    String?
+  fecha          String?
+  created_date   DateTime @default(now())
+  updated_date   DateTime @updatedAt
+  created_by     String?
+  created_by_id  String?
+  is_sample      Boolean  @default(false)
+
+  @@index([entidad, entidad_id])
+  @@index([created_date])
+  @@map("audit_log")
+}
+
+model ComponentStock {
+  id                 String          @id @default(uuid())
+  categoria          String
+  tipo               String
+  codigo             String
+  marca              String?
+  modelo             String?
+  capacidad          String?
+  compatibilidad     String?
+  cantidad_actual    Float           @default(0)
+  cantidad_minima    Float           @default(1)
+  proveedor          String?
+  ubicacion          String?
+  notas              String?
+  estado             String          @default("disponible")
+  created_date       DateTime        @default(now())
+  updated_date       DateTime        @updatedAt
+  created_by         String?
+  created_by_id      String?
+  is_sample          Boolean         @default(false)
+  stock_movements    StockMovement[]
+
+  @@index([codigo])
+  @@index([estado])
+  @@map("component_stock")
+}
+
+model Equipment {
+  id                      String               @id @default(uuid())
+  asset_number            String
+  type                    String
+  subtype                 String?
+  brand                   String
+  model                   String
+  serial_number           String
+  status                  String               @default("disponible")
+  user_type               String?
+  assigned_to             String?
+  username                String?
+  department              String?
+  sede_id                 String?
+  plano_id                String?
+  ubicacion_detalle       String?
+  delivery_date           String?
+  comments                String?
+  peripherals_mouse       Boolean              @default(false)
+  peripherals_keyboard    Boolean              @default(false)
+  peripherals_monitor     Boolean              @default(false)
+  peripherals_camera      Boolean              @default(false)
+  processor_model         String?
+  storage_capacity        String?
+  storage_type            String?
+  ram_amount              String?
+  ram_slots               Float?
+  ram_speed               String?
+  ram_generation          String?
+  ram_format              String?
+  operating_system        String?
+  ocs_id                  Float?
+  ocs_lastdate            String?
+  ocs_is_outdated         Boolean              @default(false)
+  ocs_days_without_report Float?
+  created_date            DateTime             @default(now())
+  updated_date            DateTime             @updatedAt
+  created_by              String?
+  created_by_id           String?
+  is_sample               Boolean              @default(false)
+  deliveries              Delivery[]
+  change_logs             EquipmentChangeLog[]
+  legacy_map_points       MapaPunto[]
+
+  @@index([asset_number])
+  @@index([serial_number])
+  @@index([ocs_id])
+  @@index([status])
+  @@index([sede_id, plano_id])
+  @@map("equipment")
+}
+
+model Delivery {
+  id                        String    @id @default(uuid())
+  equipment_id              String
+  recipient_name            String
+  recipient_email           String
+  recipient_dni             String?
+  recipient_address         String?
+  recipient_city            String?
+  department                String?
+  delivery_date             String
+  equipment_type            String?
+  equipment_brand           String?
+  equipment_model           String?
+  equipment_serial          String?
+  equipment_asset           String?
+  status                    String    @default("pendiente")
+  acceptance_date           String?
+  acceptance_token_hash     String?
+  acceptance_token_issued_at DateTime?
+  acceptance_token_expires_at DateTime?
+  created_date              DateTime  @default(now())
+  updated_date              DateTime  @updatedAt
+  created_by                String?
+  created_by_id             String?
+  is_sample                 Boolean   @default(false)
+  equipment                 Equipment @relation(fields: [equipment_id], references: [id], onDelete: Restrict)
+
+  @@index([equipment_id])
+  @@index([recipient_email])
+  @@index([status])
+  @@index([acceptance_token_hash])
+  @@map("delivery")
+}
+
+model EquipmentChangeLog {
+  id             String    @id @default(uuid())
+  equipment_id   String
+  asset_number   String?
+  field_name     String
+  old_value      String?
+  new_value      String?
+  source         String
+  ocs_lastdate   String?
+  ticket_id      String?
+  created_date   DateTime  @default(now())
+  updated_date   DateTime  @updatedAt
+  created_by     String?
+  created_by_id  String?
+  is_sample      Boolean   @default(false)
+  equipment      Equipment @relation(fields: [equipment_id], references: [id], onDelete: Cascade)
+
+  @@index([equipment_id, created_date])
+  @@map("equipment_change_log")
+}
+
+model Sede {
+  id            String      @id @default(uuid())
+  nombre        String
+  direccion     String?
+  descripcion   String?
+  estado        String      @default("activa")
+  created_date  DateTime    @default(now())
+  updated_date  DateTime    @updatedAt
+  created_by    String?
+  created_by_id String?
+  is_sample     Boolean     @default(false)
+  planos        MapaPlano[]
+  puntos        MapaPunto[]
+
+  @@index([nombre])
+  @@map("sede")
+}
+
+model MapaPlano {
+  id                String      @id @default(uuid())
+  sede_id           String
+  nombre            String
+  imagen_url        String
+  imagen_path       String?
+  orden             Float       @default(0)
+  created_date      DateTime    @default(now())
+  updated_date      DateTime    @updatedAt
+  created_by        String?
+  created_by_id     String?
+  is_sample         Boolean     @default(false)
+  sede              Sede        @relation(fields: [sede_id], references: [id], onDelete: Cascade)
+  puntos            MapaPunto[]
+
+  @@index([sede_id, orden])
+  @@map("mapa_plano")
+}
+
+model MapaPunto {
+  id            String     @id @default(uuid())
+  sede_id       String
+  plano_id      String
+  equipo_id     String?
+  items         Json       @default("[]")
+  x             Float
+  y             Float
+  observacion   String?
+  created_date  DateTime   @default(now())
+  updated_date  DateTime   @updatedAt
+  created_by    String?
+  created_by_id String?
+  is_sample     Boolean    @default(false)
+  sede          Sede       @relation(fields: [sede_id], references: [id], onDelete: Cascade)
+  plano         MapaPlano  @relation(fields: [plano_id], references: [id], onDelete: Cascade)
+  equipo        Equipment? @relation(fields: [equipo_id], references: [id], onDelete: SetNull)
+
+  @@index([sede_id, plano_id])
+  @@index([equipo_id])
+  @@map("mapa_punto")
+}
+
+model OcsSyncLog {
+  id              String   @id @default(uuid())
+  started_at      String
+  finished_at     String?
+  total_ids       Float?
+  skipped_outdated Float?
+  processed       Float?
+  created         Float?
+  updated         Float?
+  no_changes      Float?
+  deduplicated    Float?
+  marked_outdated Float?
+  errors          Float?
+  error_details   String?
+  status          String   @default("running")
+  created_date    DateTime @default(now())
+  updated_date    DateTime @updatedAt
+  created_by      String?
+  created_by_id   String?
+  is_sample       Boolean  @default(false)
+
+  @@index([status, created_date])
+  @@map("ocs_sync_log")
+}
+
+model Printer {
+  id                String            @id @default(uuid())
+  numero            Float?
+  printer_id        String
+  marca             String
+  modelo            String
+  piso              String?
+  sector            String?
+  edificio          String?
+  sede_id           String?
+  plano_id          String?
+  ubicacion_detalle String?
+  conexion          String?
+  toner             String?
+  unidad_imagen     String?
+  proveedor         String?
+  notas             String?
+  estado            String            @default("activa")
+  created_date      DateTime          @default(now())
+  updated_date      DateTime          @updatedAt
+  created_by        String?
+  created_by_id     String?
+  is_sample         Boolean           @default(false)
+  deliveries        PrinterDelivery[]
+
+  @@index([printer_id])
+  @@index([sede_id, plano_id])
+  @@map("printer")
+}
+
+model PrinterDelivery {
+  id                                String   @id @default(uuid())
+  printer_id_ref                    String
+  printer_asset_id                  String?
+  printer_marca                     String?
+  printer_modelo                    String?
+  printer_piso                      String?
+  printer_sector                    String?
+  printer_edificio                  String?
+  printer_conexion                  String?
+  toner_codigo                      String?
+  toner_cantidad_solicitada         Float    @default(0)
+  toner_cantidad_entregada          Float    @default(0)
+  toner_stock_id                    String?
+  unidad_imagen_codigo              String?
+  unidad_imagen_cantidad_solicitada Float    @default(0)
+  unidad_imagen_cantidad_entregada  Float    @default(0)
+  unidad_imagen_stock_id            String?
+  receptor_nombre                   String?
+  receptor_sector                   String?
+  fecha_entrega                     String
+  usuario_responsable               String?
+  observaciones                     String?
+  estado                            String   @default("pendiente")
+  created_date                      DateTime @default(now())
+  updated_date                      DateTime @updatedAt
+  created_by                        String?
+  created_by_id                     String?
+  is_sample                         Boolean  @default(false)
+  printer                           Printer  @relation(fields: [printer_id_ref], references: [id], onDelete: Restrict)
+
+  @@index([printer_id_ref, created_date])
+  @@map("printer_delivery")
+}
+
+model StockMovement {
+  id                  String         @id @default(uuid())
+  component_stock_id  String
+  codigo              String?
+  tipo_movimiento     String
+  cantidad            Float
+  cantidad_anterior   Float?
+  cantidad_nueva      Float?
+  motivo              String?
+  referencia_id       String?
+  referencia_tipo     String?
+  usuario_responsable String?
+  fecha               String
+  observaciones       String?
+  created_date        DateTime       @default(now())
+  updated_date        DateTime       @updatedAt
+  created_by          String?
+  created_by_id       String?
+  is_sample           Boolean        @default(false)
+  component_stock     ComponentStock @relation(fields: [component_stock_id], references: [id], onDelete: Restrict)
+
+  @@index([component_stock_id, created_date])
+  @@map("stock_movement")
+}

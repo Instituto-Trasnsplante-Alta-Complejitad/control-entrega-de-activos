@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { base44 } from "@/api/base44Client";
 import { toast } from "@/components/ui/use-toast";
-import { Upload, Loader2, FileText, ImageIcon } from "lucide-react";
+import { Upload, Loader2, FileText } from "lucide-react";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 

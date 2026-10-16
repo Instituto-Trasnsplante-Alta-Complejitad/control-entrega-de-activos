@@ -39,7 +39,6 @@ export default function NewDelivery() {
       toast({ title: "Error", description: "Seleccioná un equipo", variant: "destructive", duration: 1500 });
       return;
     }
-    const token = crypto.randomUUID();
     const deliveryData = {
       ...form,
       equipment_id: selectedEquipmentId,
@@ -49,7 +48,6 @@ export default function NewDelivery() {
       equipment_serial: selectedEquipment.serial_number,
       equipment_asset: selectedEquipment.asset_number,
       status: "pendiente",
-      acceptance_token: token,
     };
     await base44.entities.Delivery.create(deliveryData);
     await base44.entities.Equipment.update(selectedEquipmentId, {

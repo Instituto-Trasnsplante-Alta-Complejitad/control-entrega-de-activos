@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, Map as MapIcon, Download } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, Map as MapIcon } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const navItems = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -15,13 +14,12 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation();
-  const { isAdmin } = useCurrentUser();
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-border min-h-screen p-4">
       <div className="mb-8 px-2">
         <img 
-          src="https://media.base44.com/images/public/6a0b41b518760c50f55478db/63ccb28ee_WhatsAppImage2026-05-22at103628AM.jpg" 
+          src="/itac-logo.jpg"
           alt="ITAC Logo" 
           className="w-full max-w-[160px] object-contain"
         />
@@ -46,20 +44,6 @@ export default function Sidebar() {
 
         })}
       </nav>
-
-      {isAdmin && (
-        <Link
-          to="/exportar"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-            location.pathname === "/exportar"
-              ? "bg-[#E8896A] text-white shadow-sm"
-              : "text-muted-foreground hover:bg-orange-50 hover:text-foreground"
-          }`}
-        >
-          <Download className="w-4 h-4" />
-          Exportación
-        </Link>
-      )}
 
       <button
         onClick={() => base44.auth.logout()}

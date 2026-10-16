@@ -6,10 +6,6 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import ForgotPassword from '@/pages/ForgotPassword';
-import ResetPassword from '@/pages/ResetPassword';
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import Stock from '@/pages/Stock';
@@ -19,7 +15,6 @@ import Contracts from '@/pages/Contracts';
 import EquipmentDetail from '@/pages/EquipmentDetail';
 import Printers from '@/pages/Printers';
 import Mapa from '@/pages/Mapa';
-import Exportar from '@/pages/Exportar';
 
 
 const AuthenticatedApp = () => {
@@ -44,13 +39,9 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/aceptar" element={<AcceptDelivery />} />
       <Route path="/equipo/:id" element={<EquipmentDetail />} />
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+      <Route element={<ProtectedRoute unauthenticatedElement={null} />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/stock" element={<Stock />} />
@@ -58,7 +49,6 @@ const AuthenticatedApp = () => {
           <Route path="/mapa" element={<Mapa />} />
           <Route path="/nueva-entrega" element={<NewDelivery />} />
           <Route path="/contratos" element={<Contracts />} />
-          <Route path="/exportar" element={<Exportar />} />
           <Route path="/stock-componentes" element={<Navigate to="/" replace />} />
           <Route path="/historial" element={<Navigate to="/" replace />} />
         </Route>

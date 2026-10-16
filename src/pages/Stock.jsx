@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Download } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import * as XLSX from "xlsx";
+import writeXlsxFile from "write-excel-file/browser";
 import EquipmentTable from "@/components/stock/EquipmentTable";
 import EquipmentForm from "@/components/stock/EquipmentForm";
 import HardwareFilterPanel from "@/components/stock/HardwareFilterPanel";
@@ -124,24 +124,19 @@ export default function Stock() {
 
   const departments = [...new Set(equipment.map((e) => e.department).filter(Boolean))].sort();
 
-  const handleExportExcel = () => {
-    const rows = equipment.map((e) => ({
-      "Activo": e.asset_number,
-      "Tipo": e.type,
-      "Marca": e.brand,
-      "Modelo": e.model,
-      "N° Serie": e.serial_number,
-      "Estado": e.status,
-      "Asignado a": e.assigned_to || "",
-      "Usuario de red": e.username || "",
-      "Ubicación / Sector": e.department || "",
-      "Fecha Entrega": e.delivery_date || "",
-      "Observaciones": e.comments || "",
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Equipos");
-    XLSX.writeFile(wb, `stock_equipos_${new Date().toISOString().slice(0,10)}.xlsx`);
+  const handleExportExcel = async () => {
+    const schema = [
+      ["Activo", "asset_number"], ["Tipo", "type"], ["Marca", "brand"],
+      ["Modelo", "model"], ["N° Serie", "serial_number"], ["Estado", "status"],
+      ["Asignado a", "assigned_to"], ["Usuario de red", "username"],
+      ["Ubicación / Sector", "department"], ["Fecha Entrega", "delivery_date"],
+      ["Observaciones", "comments"],
+    ].map(([column, key]) => ({ column, type: String, value: (row) => row[key] || "" }));
+
+    await writeXlsxFile(equipment, {
+      schema,
+      fileName: `stock_equipos_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    });
   };
 
   return (

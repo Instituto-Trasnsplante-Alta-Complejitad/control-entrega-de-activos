@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Loader2, FileText, AlertCircle } from "lucide-react";
+import { CheckCircle, Loader2, FileText, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -71,8 +70,10 @@ export default function AcceptDelivery() {
         return;
       }
 
-      const deliveries = await base44.entities.Delivery.filter({ acceptance_token: token });
-      const found = deliveries.find((d) => d.id === deliveryId);
+      const response = await fetch(
+        `/api/public/deliveries/${encodeURIComponent(deliveryId)}/acceptance?token=${encodeURIComponent(token)}`,
+      );
+      const found = response.ok ? await response.json() : null;
 
       if (!found) {
         setError("Entrega no encontrada");
@@ -89,10 +90,13 @@ export default function AcceptDelivery() {
 
   const handleAccept = async () => {
     setProcessing(true);
-    await base44.entities.Delivery.update(delivery.id, {
-      status: "aceptado",
-      acceptance_date: new Date().toISOString(),
+    const token = new URLSearchParams(window.location.search).get("token");
+    const response = await fetch(`/api/public/deliveries/${encodeURIComponent(delivery.id)}/acceptance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
     });
+    if (!response.ok) throw new Error("No se pudo registrar la aceptación");
     setResult("accepted");
     setProcessing(false);
   };

@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import * as XLSX from "xlsx";
+import readXlsxFile from "read-excel-file/browser";
 
 // Limpia valores '31' (placeholder vacío del Excel) y strings vacíos
 const clean = (v) => {
@@ -70,18 +70,23 @@ export default function OcsImportDialog({ open, onClose, onDone }) {
   const [result, setResult] = useState({ created: 0, updated: 0, errors: [] });
   const fileRef = useRef();
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const wb = XLSX.read(ev.target.result, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    try {
+      const [headers = [], ...values] = await readXlsxFile(file);
+      const normalizedHeaders = headers.map((header) => String(header || "").trim());
+      const data = values.map((row) => Object.fromEntries(
+        normalizedHeaders
+          .map((header, index) => [header, row[index] ?? ""])
+          .filter(([header]) => header),
+      ));
       setRows(data);
       setStep("preview");
-    };
-    reader.readAsArrayBuffer(file);
+    } catch (error) {
+      setResult({ created: 0, updated: 0, errors: [error.message || "No se pudo leer el archivo"] });
+      setStep("done");
+    }
   };
 
   const handleImport = async () => {

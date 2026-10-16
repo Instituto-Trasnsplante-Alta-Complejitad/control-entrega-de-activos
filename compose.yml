@@ -1,0 +1,124 @@
+services:
+  migrate:
+    image: control-entrega-activos:0.1.0
+    container_name: control-entrega-activos-migrate
+    command: ["node", "./node_modules/prisma/build/index.js", "migrate", "deploy"]
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: control_entrega_activos
+      DATABASE_USER: control_activos_migrator
+      DATABASE_PASSWORD_FILE: /run/secrets/db_migrator_password
+    secrets:
+      - db_migrator_password
+    networks:
+      - db-internal
+    restart: "no"
+
+  app:
+    image: control-entrega-activos:0.1.0
+    container_name: control-entrega-activos
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      APP_URL: https://activos.ad.itac.com.ar
+      KEYCLOAK_ISSUER: https://apps.ad.itac.com.ar/auth/realms/itac
+      APP_ADMIN_GROUP: /ARR-ITAC-IT
+      APP_ADMIN_ROLE: control-activos-admin
+      APP_ALLOWED_GROUPS: /ARR-ITAC-IT
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: control_entrega_activos
+      DATABASE_USER: control_activos_app
+      DATABASE_PASSWORD_FILE: /run/secrets/db_app_password
+      STORAGE_PATH: /data/control-entrega-activos
+    secrets:
+      - db_app_password
+    volumes:
+      - type: bind
+        source: /srv/docker/apps/control-entrega-activos/data
+        target: /data/control-entrega-activos
+    networks:
+      - app-internal
+      - db-internal
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  auth:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+    container_name: control-entrega-activos-auth
+    command:
+      - --http-address=0.0.0.0:4180
+      - --provider=keycloak-oidc
+      - --provider-display-name=ITAC
+      - --client-id=control-entrega-activos
+      - --client-secret-file=/run/secrets/keycloak_client_secret
+      - --cookie-secret-file=/run/secrets/oauth_cookie_secret
+      - --cookie-name=__Host-control_entrega_activos
+      - --cookie-secure=true
+      - --cookie-httponly=true
+      - --cookie-samesite=lax
+      - --redirect-url=https://activos.ad.itac.com.ar/oauth2/callback
+      - --oidc-issuer-url=https://apps.ad.itac.com.ar/auth/realms/itac
+      - --oidc-groups-claim=groups
+      - --provider-ca-file=/etc/ssl/certs/ad-ITAC-CA.pem
+      - --use-system-trust-store=true
+      - --email-domain=itac.com.ar
+      - --scope=openid profile email groups
+      - --code-challenge-method=S256
+      - --upstream=http://app:8080/
+      - --reverse-proxy=true
+      - --trusted-proxy-ip=172.18.0.0/16
+      - --real-client-ip-header=X-Forwarded-For
+      - --pass-user-headers=true
+      - --prefer-email-to-user=false
+      - --skip-provider-button=true
+      - --whitelist-domain=activos.ad.itac.com.ar
+      - --skip-auth-route=GET=^/api/health$
+      - --skip-auth-route=GET=^/aceptar(?:/.*)?$
+      - --skip-auth-route=GET=^/assets/.*$
+      - --skip-auth-route=GET=^/favicon.ico$
+      - --skip-auth-route=GET=^/api/public/deliveries/[^/]+/acceptance$
+      - --skip-auth-route=POST=^/api/public/deliveries/[^/]+/acceptance$
+    secrets:
+      - keycloak_client_secret
+      - oauth_cookie_secret
+    volumes:
+      - type: bind
+        source: /srv/docker/apps/control-entrega-activos/certs/ad-ITAC-CA.pem
+        target: /etc/ssl/certs/ad-ITAC-CA.pem
+        read_only: true
+    networks:
+      - app-internal
+      - proxy
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+secrets:
+  db_app_password:
+    file: /srv/docker/apps/control-entrega-activos/secrets/db_app_password
+  db_migrator_password:
+    file: /srv/docker/apps/control-entrega-activos/secrets/db_migrator_password
+  keycloak_client_secret:
+    file: /srv/docker/apps/control-entrega-activos/secrets/keycloak_client_secret
+  oauth_cookie_secret:
+    file: /srv/docker/apps/control-entrega-activos/secrets/oauth_cookie_secret
+
+networks:
+  app-internal:
+    name: control-entrega-activos-internal
+    internal: true
+  db-internal:
+    external: true
+  proxy:
+    external: true

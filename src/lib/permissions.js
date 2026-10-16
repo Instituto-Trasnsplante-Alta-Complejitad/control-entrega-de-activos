@@ -1,17 +1,9 @@
 /**
  * Utilidades centralizadas de permisos para ITAC.
- * El rol del usuario viene de base44.auth.me() → user.role ("admin" | "user").
- * Los usuarios con email del dominio @itac.com.ar tienen permisos de escritura y lectura.
+ * El rol se calcula en el servidor a partir de los grupos/roles emitidos por Keycloak.
  */
 
-const ITAC_DOMAIN = "@itac.com.ar";
-
-export const isItacDomain = (user) => {
-  const email = user?.email?.toLowerCase().trim();
-  return !!email && email.endsWith(ITAC_DOMAIN);
-};
-
-export const isAdmin = (user) => user?.role === "admin" || isItacDomain(user);
+export const isAdmin = (user) => user?.role === "admin";
 
 export const canEditRecords = (user) => isAdmin(user);
 export const canDeleteRecords = (user) => isAdmin(user);

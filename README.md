@@ -1,39 +1,68 @@
-**Welcome to your Base44 project** 
+# Control de entrega de activos | ITAC
 
-**About**
+Aplicación interna para gestionar inventario, entregas de equipos, impresoras,
+componentes, planos y sincronización con OCS Inventory.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+La rama `migration/self-hosted` reemplaza los servicios de Base44 por una
+arquitectura administrada por ITAC:
 
-This project contains everything you need to run your app locally.
+- React + Vite para la interfaz.
+- Node.js + Express para la API.
+- PostgreSQL + Prisma para persistencia.
+- Keycloak + Active Directory mediante OAuth2 Proxy.
+- Docker Compose para ejecución en ARAPP12.
 
-**Edit the code in your local development environment**
+## Estado de la migración
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+La aplicación compila y cuenta con API, esquema, migración inicial y definición
+de contenedores. La importación de datos históricos se realizará después de
+validar una instancia vacía en ARAPP12. Los archivos reales de exportación no
+deben copiarse al repositorio.
 
-**Prerequisites:** 
+## Desarrollo
 
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+Requiere Node.js 24 y PostgreSQL 17.
 
+```bash
+npm ci
+npm run db:generate
+npm run dev:server
+npm run dev
 ```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
 
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+Durante desarrollo puede establecerse `DEV_AUTH_BYPASS=true`, pero el servidor
+lo ignora cuando `NODE_ENV=production`.
+
+## Validaciones
+
+```bash
+npm run db:validate
+npm run lint
+npm run build
 ```
 
-Run the app: `npm run dev`
+## Producción
 
-**Publish your changes**
+La imagen se construye con:
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+```bash
+docker build -t control-entrega-activos:0.1.0 .
+```
 
-**Docs & Support**
+`compose.yml` espera las redes externas `db-internal` y `proxy`, además de los
+secretos y el certificado interno ubicados bajo
+`/srv/docker/apps/control-entrega-activos/`.
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+El único servicio conectado a `proxy` es OAuth2 Proxy. La API y PostgreSQL no
+quedan publicados. Los administradores se determinan por el grupo de Keycloak
+`/ARR-ITAC-IT`; pertenecer al dominio de correo no concede privilegios.
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+## Datos sensibles
+
+No subir al repositorio:
+
+- exportaciones JSON o ZIP;
+- contraseñas y secretos OIDC;
+- imágenes de planos reales;
+- archivos `.env`;
+- copias de la base de datos.

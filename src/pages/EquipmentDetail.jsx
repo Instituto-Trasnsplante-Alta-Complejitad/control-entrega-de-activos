@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Monitor, Cpu, HardDrive, MemoryStick, MonitorCheck } from "lucide-react";
+import { Monitor, Cpu, HardDrive, MonitorCheck } from "lucide-react";
 
 const typeMap = {
   notebook: "Notebook", all_in_one: "All in One", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro",
@@ -62,7 +62,7 @@ export default function EquipmentDetail() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="text-center">
           <img
-            src="https://media.base44.com/images/public/6a0b41b518760c50f55478db/63ccb28ee_WhatsAppImage2026-05-22at103628AM.jpg"
+            src="/itac-logo.jpg"
             alt="ITAC Logo"
             className="h-10 mx-auto mb-4"
           />

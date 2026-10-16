@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, FileText, Printer, Map as MapIcon } from "lucide-react";
+import { LayoutDashboard, Monitor, PackagePlus, FileText, Map as MapIcon } from "lucide-react";
 
 const navItems = [
   { label: "Inicio", path: "/", icon: LayoutDashboard },

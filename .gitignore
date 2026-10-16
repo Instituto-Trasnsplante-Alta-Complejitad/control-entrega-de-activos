@@ -1,6 +1,7 @@
-#env
+# Environment
 .env
 .env.*
+!.env.example
 
 # Logs
 /logs
@@ -27,6 +28,10 @@ dist-ssr
 *.sln
 *.sw?
 
-.env
 .vite
-base44/.app.jsonc
+
+# self-hosted runtime and migration data
+/src/generated/prisma/
+/migration-data/
+/storage/
+*.tsbuildinfo
