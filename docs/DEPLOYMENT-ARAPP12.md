@@ -19,6 +19,11 @@ utiliza los endpoints internos `http://keycloak:8080` para canjear códigos y
 validar firmas. Esto evita que un contenedor tenga que volver a ingresar a
 ARAPP12 mediante la IP externa del servidor.
 
+Los usuarios federados desde Active Directory no presentan el atributo OIDC
+`email_verified=true`. OAuth2 Proxy acepta esos correos porque la identidad ya
+fue validada por Keycloak contra el AD corporativo; además se mantienen las
+restricciones por dominio y grupo de AD.
+
 ## Requisitos previos
 
 1. El host existente `apps.ad.itac.com.ar` debe apuntar a ARAPP12.

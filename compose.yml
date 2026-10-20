@@ -71,6 +71,7 @@ services:
       - --proxy-prefix=/activos/oauth2
       - --redirect-url=https://apps.ad.itac.com.ar/activos/oauth2/callback
       - --oidc-issuer-url=https://apps.ad.itac.com.ar/auth/realms/itac
+      - --insecure-oidc-allow-unverified-email=true
       - --skip-oidc-discovery=true
       - --login-url=https://apps.ad.itac.com.ar/auth/realms/itac/protocol/openid-connect/auth
       - --redeem-url=http://keycloak:8080/auth/realms/itac/protocol/openid-connect/token
