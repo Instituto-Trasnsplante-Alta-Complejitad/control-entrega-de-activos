@@ -87,7 +87,9 @@ apps.ad.itac.com.ar {
     }
 
     handle_path /activos/* {
-        reverse_proxy control-entrega-activos-auth:4180
+        reverse_proxy control-entrega-activos-auth:4180 {
+            header_up X-Forwarded-Uri {orig_uri}
+        }
     }
 
     handle {

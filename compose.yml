@@ -90,12 +90,12 @@ services:
       - --prefer-email-to-user=false
       - --skip-provider-button=true
       - --whitelist-domain=apps.ad.itac.com.ar
-      - --skip-auth-route=GET=^/api/health$
-      - --skip-auth-route=GET=^/aceptar(?:/.*)?$
-      - --skip-auth-route=GET=^/assets/.*$
-      - --skip-auth-route=GET=^/favicon.ico$
-      - --skip-auth-route=GET=^/api/public/deliveries/[^/]+/acceptance$
-      - --skip-auth-route=POST=^/api/public/deliveries/[^/]+/acceptance$
+      - --skip-auth-route=GET=^/activos/api/health$
+      - --skip-auth-route=GET=^/activos/aceptar(?:/.*)?$
+      - --skip-auth-route=GET=^/activos/assets/.*$
+      - --skip-auth-route=GET=^/activos/favicon.ico$
+      - --skip-auth-route=GET=^/activos/api/public/deliveries/[^/]+/acceptance$
+      - --skip-auth-route=POST=^/activos/api/public/deliveries/[^/]+/acceptance$
     secrets:
       - keycloak_client_secret
       - oauth_cookie_secret
