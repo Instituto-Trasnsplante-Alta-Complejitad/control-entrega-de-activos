@@ -38,6 +38,7 @@ COPY --from=builder --chown=app:app /app/package.json /app/package-lock.json ./
 COPY --from=production-dependencies --chown=app:app /app/node_modules ./node_modules
 COPY --from=builder --chown=app:app /app/dist ./dist
 COPY --from=builder --chown=app:app /app/server ./server
+COPY --from=builder --chown=app:app /app/scripts ./scripts
 COPY --from=builder --chown=app:app /app/prisma ./prisma
 COPY --from=builder --chown=app:app /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder --chown=app:app /app/src/generated ./src/generated

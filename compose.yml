@@ -112,6 +112,32 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  import:
+    profiles: ["tools"]
+    image: control-entrega-activos:0.1.0
+    command:
+      - ./node_modules/.bin/tsx
+      - scripts/import-base44-export.mjs
+      - --source
+      - /import
+      - --dry-run
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: control_entrega_activos
+      DATABASE_USER: control_activos_migrator
+      DATABASE_PASSWORD_FILE: /run/secrets/db_migrator_password
+    secrets:
+      - db_migrator_password
+    volumes:
+      - type: bind
+        source: /srv/docker/apps/control-entrega-activos/import
+        target: /import
+        read_only: true
+    networks:
+      - db-internal
+    restart: "no"
+
 secrets:
   db_app_password:
     file: /srv/docker/apps/control-entrega-activos/secrets/db_app_password
