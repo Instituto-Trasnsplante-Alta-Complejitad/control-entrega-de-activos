@@ -16,6 +16,10 @@ services:
     restart: "no"
 
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
     image: control-entrega-activos:0.1.0
     container_name: control-entrega-activos
     environment:
