@@ -15,6 +15,8 @@ import Contracts from '@/pages/Contracts';
 import EquipmentDetail from '@/pages/EquipmentDetail';
 import Printers from '@/pages/Printers';
 import Mapa from '@/pages/Mapa';
+import Alerts from '@/pages/Alerts';
+import Reports from '@/pages/Reports';
 import { appBasePath } from '@/lib/app-path';
 
 
@@ -48,6 +50,8 @@ const AuthenticatedApp = () => {
           <Route path="/stock" element={<Stock />} />
           <Route path="/impresoras" element={<Printers />} />
           <Route path="/mapa" element={<Mapa />} />
+          <Route path="/alertas" element={<Alerts />} />
+          <Route path="/reportes" element={<Reports />} />
           <Route path="/nueva-entrega" element={<NewDelivery />} />
           <Route path="/contratos" element={<Contracts />} />
           <Route path="/stock-componentes" element={<Navigate to="/" replace />} />

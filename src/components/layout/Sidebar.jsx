@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, Map as MapIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { BellRing, FileBarChart, LayoutDashboard, Monitor, PackagePlus, FileText, LogOut, Printer, Map as MapIcon } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { withAppBasePath } from "@/lib/app-path";
 
@@ -8,6 +9,8 @@ const navItems = [
   { label: "Stock de Equipos", path: "/stock", icon: Monitor },
   { label: "Impresoras", path: "/impresoras", icon: Printer },
   { label: "Mapa", path: "/mapa", icon: MapIcon },
+  { label: "Alertas", path: "/alertas", icon: BellRing },
+  { label: "Reportes", path: "/reportes", icon: FileBarChart },
   { label: "Nueva Entrega", path: "/nueva-entrega", icon: PackagePlus },
   { label: "Contratos", path: "/contratos", icon: FileText },
 ];
@@ -15,6 +18,14 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation();
+  const dashboardQuery = useQuery({
+    queryKey: ["inventory-dashboard"],
+    queryFn: async () => (await base44.functions.invoke("dashboard")).data,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const alertCount = (dashboardQuery.data?.alerts?.counts?.critical || 0)
+    + (dashboardQuery.data?.alerts?.counts?.warning || 0);
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-border min-h-screen p-4">
@@ -40,7 +51,12 @@ export default function Sidebar() {
               }>
               
               <item.icon className="w-4 h-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.path === "/alertas" && alertCount > 0 && (
+                <span className={`min-w-5 h-5 px-1 rounded-full text-[11px] grid place-items-center ${isActive ? "bg-white text-[#E8896A]" : "bg-red-100 text-red-700"}`}>
+                  {alertCount > 99 ? "99+" : alertCount}
+                </span>
+              )}
             </Link>);
 
         })}

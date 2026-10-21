@@ -9,6 +9,8 @@ import multer from "multer";
 
 import { requireAdmin, requireIdentity } from "./auth.js";
 import { getEntityDefinition, parseFilter, parseSort, pickAllowed } from "./entity-registry.js";
+import { getInventoryInsights, getInventoryReports } from "./inventory-insights.js";
+import { isOcsSyncGloballyRunning, startOcsSync } from "./ocs-sync.js";
 import { prisma } from "./prisma.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -191,6 +193,44 @@ app.post("/api/functions/getMapData", asyncRoute(async (_req, res) => {
   res.json({ equipment, printers });
 }));
 
+app.post("/api/functions/dashboard", asyncRoute(async (_req, res) => {
+  const [insights, ocsSyncRunning] = await Promise.all([
+    getInventoryInsights(prisma),
+    isOcsSyncGloballyRunning(),
+  ]);
+  res.json({ ...insights, ocsSyncRunning });
+}));
+
+app.post("/api/functions/inventoryAlerts", asyncRoute(async (_req, res) => {
+  const insights = await getInventoryInsights(prisma);
+  res.json({
+    generatedAt: insights.generatedAt,
+    thresholds: insights.thresholds,
+    alerts: insights.alerts,
+  });
+}));
+
+app.post("/api/functions/inventoryReports", asyncRoute(async (_req, res) => {
+  res.json(await getInventoryReports(prisma));
+}));
+
+app.post("/api/functions/ocsSyncStatus", asyncRoute(async (_req, res) => {
+  const [lastSync, running] = await Promise.all([
+    prisma.ocsSyncLog.findFirst({ orderBy: { created_date: "desc" } }),
+    isOcsSyncGloballyRunning(),
+  ]);
+  res.json({ running, lastSync });
+}));
+
+app.post("/api/functions/syncOcs", requireAdmin, asyncRoute(async (req, res) => {
+  const result = await startOcsSync(prisma, req.identity.email || req.identity.subject || "manual");
+  if (!result.started) {
+    return res.status(409).json({ message: "Ya hay una sincronización OCS en curso", ...result });
+  }
+  rearmOcsAfter(result.completion);
+  res.status(202).json({ started: true, logId: result.log.id });
+}));
+
 app.post("/api/functions/generateContractPdf", asyncRoute(async (req, res) => {
   const deliveryId = req.body?.deliveryId;
   if (!deliveryId) return res.status(400).json({ message: "deliveryId requerido" });
@@ -225,8 +265,108 @@ const server = app.listen(port, "0.0.0.0", () => {
   console.log(`control-entrega-de-activos escuchando en 0.0.0.0:${port}`);
 });
 
+let ocsTimer = null;
+
+function clearOcsTimer() {
+  if (!ocsTimer) return;
+  clearTimeout(ocsTimer);
+  ocsTimer = null;
+}
+
+function scheduleOcsRetry(error) {
+  const retryMinutes = Number(process.env.OCS_RETRY_INTERVAL_MINUTES || 60);
+  const retryMs = (Number.isFinite(retryMinutes) && retryMinutes > 0 ? retryMinutes : 60) * 60_000;
+  console.error(`Se reintentará programar OCS en ${Math.round(retryMs / 60_000)} minutos:`, error);
+  clearOcsTimer();
+  ocsTimer = setTimeout(() => {
+    ocsTimer = null;
+    scheduleNextOcsSync().catch(scheduleOcsRetry);
+  }, retryMs);
+  ocsTimer.unref?.();
+}
+
+function ocsScheduleIntervals() {
+  const intervalHours = Number(process.env.OCS_SYNC_INTERVAL_HOURS || 24);
+  const intervalMs = (Number.isFinite(intervalHours) && intervalHours > 0 ? intervalHours : 24) * 3_600_000;
+  const retryMinutes = Number(process.env.OCS_RETRY_INTERVAL_MINUTES || 60);
+  const retryMs = (Number.isFinite(retryMinutes) && retryMinutes > 0 ? retryMinutes : 60) * 60_000;
+  return { intervalMs, retryMs };
+}
+
+async function readOcsScheduleState() {
+  const { intervalMs, retryMs } = ocsScheduleIntervals();
+  let lastSync = await prisma.ocsSyncLog.findFirst({ orderBy: { created_date: "desc" } });
+  const globallyRunning = await isOcsSyncGloballyRunning();
+
+  if (lastSync?.status === "running" && !globallyRunning) {
+    await prisma.ocsSyncLog.updateMany({
+      where: { id: lastSync.id, status: "running" },
+      data: {
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        errors: (lastSync.errors || 0) + 1,
+        error_details: JSON.stringify({ fatal: "Sincronización interrumpida por reinicio del servicio" }),
+      },
+    });
+    lastSync = await prisma.ocsSyncLog.findFirst({ orderBy: { created_date: "desc" } });
+  }
+
+  const elapsedMs = lastSync ? Date.now() - lastSync.created_date.getTime() : intervalMs;
+  const targetInterval = lastSync && ["failed", "completed_with_warnings"].includes(lastSync.status)
+    ? retryMs
+    : intervalMs;
+  return { globallyRunning, elapsedMs: Math.max(0, elapsedMs), targetInterval, retryMs };
+}
+
+async function runScheduledOcsSync() {
+  ocsTimer = null;
+  try {
+    const state = await readOcsScheduleState();
+    if (!state.globallyRunning && state.elapsedMs >= state.targetInterval) {
+      const result = await startOcsSync(prisma, "automatico-24h");
+      if (result.started && result.completion) await result.completion;
+    }
+  } catch (error) {
+    console.error("No se pudo iniciar la sincronización OCS automática:", error);
+  }
+
+  try {
+    await scheduleNextOcsSync();
+  } catch (error) {
+    scheduleOcsRetry(error);
+  }
+}
+
+async function scheduleNextOcsSync() {
+  if (!process.env.OCS_BASE_URL || process.env.OCS_AUTO_SYNC === "false") {
+    clearOcsTimer();
+    return;
+  }
+
+  const state = await readOcsScheduleState();
+  const delayMs = state.globallyRunning
+    ? state.retryMs
+    : Math.max(60_000, state.targetInterval - state.elapsedMs);
+
+  clearOcsTimer();
+  ocsTimer = setTimeout(runScheduledOcsSync, delayMs);
+  ocsTimer.unref?.();
+  console.log(`Próxima sincronización OCS programada en ${Math.round(delayMs / 60_000)} minutos`);
+}
+
+function rearmOcsAfter(completion) {
+  clearOcsTimer();
+  Promise.resolve(completion)
+    .catch((error) => console.error("La sincronización OCS manual finalizó con error:", error))
+    .finally(() => scheduleNextOcsSync())
+    .catch(scheduleOcsRetry);
+}
+
+scheduleNextOcsSync().catch(scheduleOcsRetry);
+
 async function shutdown(signal) {
   console.log(`Cierre solicitado por ${signal}`);
+  clearOcsTimer();
   server.close(async () => {
     await prisma.$disconnect();
     process.exit(0);

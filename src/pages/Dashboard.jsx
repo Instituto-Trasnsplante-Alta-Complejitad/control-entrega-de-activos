@@ -1,161 +1,302 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import {
+  AlertTriangle,
+  BellRing,
+  CheckCircle2,
+  Clock3,
+  Cpu,
+  Database,
+  HardDrive,
+  Loader2,
+  Monitor,
+  PackageCheck,
+  RefreshCw,
+  ServerCrash,
+  ShieldAlert,
+} from "lucide-react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+
 import { base44 } from "@/api/base44Client";
-import { Monitor, PackageCheck, Clock, FileText, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import StatCard from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import StatCard from "@/components/dashboard/StatCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/use-toast";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
-const typeMap = {
-  notebook: "Notebook", all_in_one: "All in One", tablet: "Tablet", celular: "Celular", cpu: "CPU", otro: "Otro",
+const statusLabels = {
+  disponible: "Disponibles",
+  asignado: "Asignados",
+  en_reparacion: "En reparación",
+  baja: "Dados de baja",
+  sin_estado: "Sin estado",
 };
 
-const statusMap = {
-  disponible: { label: "Disponible", className: "bg-green-100 text-green-700 border-green-200" },
-  asignado: { label: "Asignado", className: "bg-blue-100 text-blue-700 border-blue-200" },
-  baja: { label: "Baja", className: "bg-red-100 text-red-700 border-red-200" },
-  en_reparacion: { label: "En reparación", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+const statusColors = {
+  disponible: "#22c55e",
+  asignado: "#3b82f6",
+  en_reparacion: "#f59e0b",
+  baja: "#ef4444",
+  sin_estado: "#94a3b8",
 };
+
+const severityStyles = {
+  critical: "border-red-200 bg-red-50 text-red-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  info: "border-blue-200 bg-blue-50 text-blue-800",
+};
+
+function formatDate(value) {
+  if (!value) return "Sin registro";
+  const parsed = new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? `${value}T00:00:00` : value);
+  if (Number.isNaN(parsed.getTime())) return "Sin registro";
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(parsed);
+}
+
+function LoadingDashboard() {
+  return (
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      <Skeleton className="h-16 w-72" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="h-28" />)}
+      </div>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Skeleton className="h-80" />
+        <Skeleton className="h-80" />
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
-  const [activeFilter, setActiveFilter] = useState(null); // null | "total" | "disponible" | "asignado"
-
-  const { data: equipment = [] } = useQuery({
-    queryKey: ["equipment"],
-    queryFn: () => base44.entities.Equipment.list("-created_date", 500),
+  const queryClient = useQueryClient();
+  const { isAdmin } = useCurrentUser();
+  const dashboardQuery = useQuery({
+    queryKey: ["inventory-dashboard"],
+    queryFn: async () => (await base44.functions.invoke("dashboard")).data,
+    refetchInterval: (query) => query.state.data?.ocsSyncRunning ? 3_000 : false,
   });
 
-  const { data: deliveries = [] } = useQuery({
-    queryKey: ["deliveries"],
-    queryFn: () => base44.entities.Delivery.list("-created_date", 200),
+  const syncMutation = useMutation({
+    mutationFn: () => base44.functions.invoke("syncOcs"),
+    onSuccess: () => {
+      toast({ title: "Sincronización OCS iniciada", description: "El dashboard se actualizará al finalizar." });
+      queryClient.invalidateQueries({ queryKey: ["inventory-dashboard"] });
+    },
+    onError: (error) => {
+      const alreadyRunning = error?.status === 409;
+      toast({
+        title: alreadyRunning ? "OCS ya se está sincronizando" : "No se pudo iniciar OCS",
+        description: alreadyRunning ? "Esperá a que termine el proceso actual." : error.message,
+        variant: alreadyRunning ? "default" : "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventory-dashboard"] });
+    },
   });
 
-  const stats = {
-    total: equipment.length,
-    available: equipment.filter((e) => e.status === "disponible").length,
-    assigned: equipment.filter((e) => e.status === "asignado").length,
-    contracts: deliveries.length,
-  };
+  if (dashboardQuery.isLoading) return <LoadingDashboard />;
 
-  const recentDeliveries = deliveries.slice(0, 8);
+  if (dashboardQuery.isError) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto">
+        <Card className="border-red-200">
+          <CardContent className="py-12 text-center space-y-4">
+            <ServerCrash className="w-12 h-12 mx-auto text-red-500" />
+            <div>
+              <h1 className="text-xl font-semibold">No se pudo cargar el dashboard</h1>
+              <p className="text-sm text-muted-foreground mt-1">{dashboardQuery.error?.message}</p>
+            </div>
+            <Button onClick={() => dashboardQuery.refetch()}>Reintentar</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const statusBadge = {
-    pendiente: "bg-amber-100 text-amber-700 border-amber-200",
-    aceptado: "bg-green-100 text-green-700 border-green-200",
-    rechazado: "bg-red-100 text-red-700 border-red-200",
-    devuelto: "bg-slate-100 text-slate-700 border-slate-200",
-  };
+  const data = dashboardQuery.data;
+  const byStatus = data.equipment?.byStatus || {};
+  const linkedOcs = (data.ocs?.current || 0) + (data.ocs?.warning || 0) + (data.ocs?.critical || 0);
+  const ocsCoverage = data.equipment?.active > 0 ? Math.round((linkedOcs / data.equipment.active) * 100) : 0;
+  const ocsAlerts = (data.ocs?.warning || 0) + (data.ocs?.critical || 0);
+  const chartData = Object.entries(byStatus).map(([name, value]) => ({
+    name: statusLabels[name] || name,
+    key: name,
+    value,
+  })).filter((item) => item.value > 0);
+  const topAlerts = data.alerts?.items?.slice(0, 6) || [];
+  const recentDeliveries = data.deliveries?.recent || [];
+  const syncRunning = data.ocsSyncRunning;
 
-  const handleStatClick = (filter) => {
-    setActiveFilter(activeFilter === filter ? null : filter);
-  };
-
-  const filteredEquipment = activeFilter === "total" ? equipment
-    : activeFilter === "disponible" ? equipment.filter((e) => e.status === "disponible")
-    : activeFilter === "asignado" ? equipment.filter((e) => e.status === "asignado")
-    : [];
-
-  const filterTitles = {
-    total: "Todos los Equipos",
-    disponible: "Equipos Disponibles",
-    asignado: "Equipos Asignados",
-  };
+  const stats = [
+    { title: "Total equipos", value: data.equipment?.total || 0, icon: Monitor, color: "bg-blue-500" },
+    { title: "Disponibles", value: byStatus.disponible || 0, icon: PackageCheck, color: "bg-green-500" },
+    { title: "Asignados", value: byStatus.asignado || 0, icon: CheckCircle2, color: "bg-sky-500" },
+    { title: "Alertas OCS", value: ocsAlerts, icon: Database, color: "bg-amber-500" },
+    { title: "Hardware a revisar", value: data.equipment?.hardwareAtRisk || 0, icon: Cpu, color: "bg-orange-500" },
+    { title: "Stock bajo", value: data.stock?.low || 0, icon: HardDrive, color: "bg-red-500" },
+  ];
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Resumen general del equipamiento</p>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className={`cursor-pointer rounded-xl transition-all ${activeFilter === "total" ? "ring-2 ring-primary" : "hover:opacity-90"}`} onClick={() => handleStatClick("total")}>
-          <StatCard title="Total Equipos" value={stats.total} icon={Monitor} color="bg-primary" />
+    <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard de activos</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Estado del inventario, OCS y situaciones que requieren atención.
+          </p>
         </div>
-        <div className={`cursor-pointer rounded-xl transition-all ${activeFilter === "disponible" ? "ring-2 ring-green-500" : "hover:opacity-90"}`} onClick={() => handleStatClick("disponible")}>
-          <StatCard title="Disponibles" value={stats.available} icon={PackageCheck} color="bg-green-500" />
-        </div>
-        <div className={`cursor-pointer rounded-xl transition-all ${activeFilter === "asignado" ? "ring-2 ring-blue-500" : "hover:opacity-90"}`} onClick={() => handleStatClick("asignado")}>
-          <StatCard title="Asignados" value={stats.assigned} icon={Clock} color="bg-blue-500" />
-        </div>
-        <StatCard title="Contratos" value={stats.contracts} icon={FileText} color="bg-amber-500" />
-      </div>
-
-      {activeFilter && (
-        <Card>
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">{filterTitles[activeFilter]}</CardTitle>
-            <Button variant="ghost" size="icon" onClick={() => setActiveFilter(null)}>
-              <X className="w-4 h-4" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className={syncRunning ? "border-blue-300 bg-blue-50 text-blue-700" : ""}>
+            {syncRunning ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Clock3 className="w-3.5 h-3.5 mr-1" />}
+            {syncRunning ? "Sincronizando OCS" : `Actualizado ${formatDate(data.generatedAt)}`}
+          </Badge>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={syncRunning || syncMutation.isPending}
+              onClick={() => syncMutation.mutate()}
+            >
+              <RefreshCw className={`w-4 h-4 ${syncRunning || syncMutation.isPending ? "animate-spin" : ""}`} />
+              Sincronizar OCS
             </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {stats.map((stat) => <StatCard key={stat.title} {...stat} />)}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Estado de los equipos</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-2 font-medium">N° Activo</th>
-                    <th className="pb-2 font-medium">Tipo</th>
-                    <th className="pb-2 font-medium">Marca / Modelo</th>
-                    <th className="pb-2 font-medium hidden sm:table-cell">Asignado a</th>
-                    <th className="pb-2 font-medium hidden md:table-cell">Sector</th>
-                    <th className="pb-2 font-medium">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEquipment.map((item) => {
-                    const st = statusMap[item.status] || statusMap.disponible;
-                    return (
-                      <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/30">
-                        <td className="py-2.5 font-mono text-xs">{item.asset_number}</td>
-                        <td className="py-2.5">{typeMap[item.type] || item.type}</td>
-                        <td className="py-2.5">{item.brand} {item.model}</td>
-                        <td className="py-2.5 hidden sm:table-cell">{item.assigned_to || "—"}</td>
-                        <td className="py-2.5 hidden md:table-cell">{item.department || "—"}</td>
-                        <td className="py-2.5">
-                          <Badge variant="outline" className={st.className}>{st.label}</Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filteredEquipment.length === 0 && (
-                    <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Sin equipos</td></tr>
-                  )}
-                </tbody>
-              </table>
+          <CardContent className="h-72">
+            {chartData.length > 0 ? (
+              <div className="grid grid-cols-[minmax(0,1fr)_150px] h-full items-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={3}>
+                      {chartData.map((entry) => <Cell key={entry.key} fill={statusColors[entry.key] || "#94a3b8"} />)}
+                    </Pie>
+                    <Tooltip formatter={(value, name) => [value, name]} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-3">
+                  {chartData.map((entry) => (
+                    <div key={entry.key} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: statusColors[entry.key] || "#94a3b8" }} />
+                        {entry.name}
+                      </span>
+                      <strong>{entry.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : <p className="h-full grid place-items-center text-sm text-muted-foreground">Sin equipos cargados</p>}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-lg">Cobertura OCS</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Alerta luego de 24 h sin reporte; crítica luego de 7 días.</p>
+            </div>
+            <Badge variant="outline">{ocsCoverage}% vinculado</Badge>
+          </CardHeader>
+          <CardContent className="space-y-5 pt-4">
+            <Progress value={ocsCoverage} className="h-3" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                <p className="text-xs text-green-700">Al día</p>
+                <p className="text-2xl font-bold text-green-800">{data.ocs?.current || 0}</p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-xs text-amber-700">Más de 24 h</p>
+                <p className="text-2xl font-bold text-amber-800">{data.ocs?.warning || 0}</p>
+              </div>
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-xs text-red-700">Más de 7 días</p>
+                <p className="text-2xl font-bold text-red-800">{data.ocs?.critical || 0}</p>
+              </div>
+              <div className="rounded-lg border bg-slate-50 p-3">
+                <p className="text-xs text-slate-600">Sin vincular</p>
+                <p className="text-2xl font-bold text-slate-800">{data.ocs?.unlinked || 0}</p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3 text-sm">
+              <p className="font-medium">Última sincronización</p>
+              <p className="text-muted-foreground mt-1">
+                {data.lastSync ? `${formatDate(data.lastSync.finished_at || data.lastSync.started_at)} · ${data.lastSync.status}` : "Todavía no se ejecutó"}
+              </p>
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {!activeFilter && (
+      <div className="grid xl:grid-cols-[1.15fr_0.85fr] gap-6">
+        <Card>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2"><BellRing className="w-5 h-5 text-amber-500" /> Alertas prioritarias</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">{data.alerts?.counts?.total || 0} observaciones detectadas</p>
+            </div>
+            <Button asChild variant="outline" size="sm"><Link to="/alertas">Ver todas</Link></Button>
+          </CardHeader>
+          <CardContent>
+            {topAlerts.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-500" />
+                No hay alertas pendientes.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {topAlerts.map((alert) => {
+                  const content = (
+                    <div className={`rounded-lg border p-3 flex gap-3 ${severityStyles[alert.severity]}`}>
+                      {alert.severity === "critical" ? <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />}
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{alert.title}</p>
+                        <p className="text-xs opacity-80 truncate">{alert.assetNumber || alert.description}</p>
+                      </div>
+                    </div>
+                  );
+                  return alert.href ? <Link key={alert.id} to={alert.href} className="block hover:opacity-90">{content}</Link> : <div key={alert.id}>{content}</div>;
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Últimas Entregas</CardTitle>
+            <CardTitle className="text-lg">Últimas entregas</CardTitle>
           </CardHeader>
           <CardContent>
             {recentDeliveries.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">No hay entregas registradas aún</p>
+              <p className="text-sm text-muted-foreground py-10 text-center">No hay entregas registradas.</p>
             ) : (
-              <div className="space-y-3">
-                {recentDeliveries.map((d) => (
-                  <div key={d.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{d.recipient_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {d.equipment_brand} {d.equipment_model} · {d.equipment_asset}
-                      </p>
+              <div className="space-y-1">
+                {recentDeliveries.slice(0, 6).map((delivery) => (
+                  <div key={delivery.id} className="py-3 border-b last:border-0 flex justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{delivery.recipient_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{delivery.equipment_asset || "Sin activo"} · {delivery.department || "Sin sector"}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground hidden sm:block">
-                        {d.delivery_date ? format(new Date(d.delivery_date), "d MMM yyyy", { locale: es }) : "—"}
-                      </span>
-                      <Badge variant="outline" className={statusBadge[d.status] || ""}>
-                        {d.status?.charAt(0).toUpperCase() + d.status?.slice(1)}
-                      </Badge>
+                    <div className="text-right shrink-0">
+                      <Badge variant="outline" className="text-xs">{delivery.status}</Badge>
+                      <p className="text-[11px] text-muted-foreground mt-1">{formatDate(delivery.delivery_date)}</p>
                     </div>
                   </div>
                 ))}
@@ -163,7 +304,7 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }

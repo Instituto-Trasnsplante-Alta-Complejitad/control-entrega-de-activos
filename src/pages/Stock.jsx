@@ -125,18 +125,20 @@ export default function Stock() {
   const departments = [...new Set(equipment.map((e) => e.department).filter(Boolean))].sort();
 
   const handleExportExcel = async () => {
-    const schema = [
+    const columns = [
       ["Activo", "asset_number"], ["Tipo", "type"], ["Marca", "brand"],
       ["Modelo", "model"], ["N° Serie", "serial_number"], ["Estado", "status"],
       ["Asignado a", "assigned_to"], ["Usuario de red", "username"],
       ["Ubicación / Sector", "department"], ["Fecha Entrega", "delivery_date"],
       ["Observaciones", "comments"],
-    ].map(([column, key]) => ({ column, type: String, value: (row) => row[key] || "" }));
+    ].map(([header, key]) => ({
+      header: { value: header, fontWeight: "bold" },
+      cell: (row) => ({ value: String(row[key] || ""), type: String }),
+      width: key === "comments" ? 50 : 20,
+    }));
 
-    await writeXlsxFile(equipment, {
-      schema,
-      fileName: `stock_equipos_${new Date().toISOString().slice(0, 10)}.xlsx`,
-    });
+    await writeXlsxFile(equipment, { columns })
+      .toFile(`stock_equipos_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   return (

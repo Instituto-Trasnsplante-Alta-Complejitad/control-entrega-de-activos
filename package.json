@@ -11,6 +11,7 @@
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
+    "ocs:sync": "tsx scripts/run-ocs-sync.mjs",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",

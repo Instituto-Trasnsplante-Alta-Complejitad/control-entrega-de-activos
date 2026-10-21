@@ -33,6 +33,21 @@ services:
       DATABASE_USER: control_activos_app
       DATABASE_PASSWORD_FILE: /run/secrets/db_app_password
       STORAGE_PATH: /data/control-entrega-activos
+      TZ: America/Argentina/Buenos_Aires
+      OCS_BASE_URL: http://inventario.ad.itac.com.ar/ocsapi/v1
+      OCS_WARNING_HOURS: "24"
+      OCS_CRITICAL_DAYS: "7"
+      OCS_REPORT_DAYS: "30"
+      OCS_TIMEOUT_MS: "20000"
+      OCS_CONCURRENCY: "6"
+      OCS_CREATE_MISSING: "false"
+      OCS_AUTO_SYNC: "true"
+      OCS_SYNC_INTERVAL_HOURS: "24"
+      OCS_RETRY_INTERVAL_MINUTES: "60"
+      MIN_RAM_GB: "8"
+      CRITICAL_RAM_GB: "4"
+      RENEWAL_MIN_SCORE: "3"
+      OLD_OS_PATTERNS: "windows xp,windows vista,windows 7,windows 8"
     secrets:
       - db_app_password
     volumes:
@@ -42,6 +57,7 @@ services:
     networks:
       - app-internal
       - db-internal
+      - ocs-egress
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -138,6 +154,34 @@ services:
       - db-internal
     restart: "no"
 
+  ocs-sync:
+    profiles: ["tools"]
+    image: control-entrega-activos:0.1.0
+    command: ["./node_modules/.bin/tsx", "scripts/run-ocs-sync.mjs"]
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: control_entrega_activos
+      DATABASE_USER: control_activos_app
+      DATABASE_PASSWORD_FILE: /run/secrets/db_app_password
+      TZ: America/Argentina/Buenos_Aires
+      OCS_BASE_URL: http://inventario.ad.itac.com.ar/ocsapi/v1
+      OCS_WARNING_HOURS: "24"
+      OCS_CRITICAL_DAYS: "7"
+      OCS_REPORT_DAYS: "30"
+      OCS_TIMEOUT_MS: "20000"
+      OCS_CONCURRENCY: "6"
+      OCS_CREATE_MISSING: "false"
+      MIN_RAM_GB: "8"
+      CRITICAL_RAM_GB: "4"
+      RENEWAL_MIN_SCORE: "3"
+    secrets:
+      - db_app_password
+    networks:
+      - db-internal
+      - ocs-egress
+    restart: "no"
+
 secrets:
   db_app_password:
     file: /srv/docker/apps/control-entrega-activos/secrets/db_app_password
@@ -154,5 +198,8 @@ networks:
     internal: true
   db-internal:
     external: true
+  ocs-egress:
+    name: control-entrega-activos-ocs-egress
+    driver: bridge
   proxy:
     external: true

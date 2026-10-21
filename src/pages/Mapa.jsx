@@ -36,10 +36,11 @@ export default function Mapa() {
   const [fullscreen, setFullscreen] = useState(false);
   const [filters, setFilters] = useState({ tipo: "", estado: "", sector: "", usuario: "" });
   const [sedeForm, setSedeForm] = useState({ open: false, initial: null });
-  const [planoForm, setPlanoForm] = useState(false);
+  const [planoForm, setPlanoForm] = useState({ open: false, initial: null });
   const [puntoForm, setPuntoForm] = useState({ open: false, pendingXY: null, initial: null });
   const [detail, setDetail] = useState({ open: false, punto: null });
   const [confirmSede, setConfirmSede] = useState(null);
+  const [confirmPlano, setConfirmPlano] = useState(null);
   const [confirmDeletePunto, setConfirmDeletePunto] = useState(null);
   const [highlightPuntoId, setHighlightPuntoId] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -167,7 +168,15 @@ export default function Mapa() {
   // ── Mutaciones planos ──
   const createPlano = useMutation({
     mutationFn: (data) => base44.entities.MapaPlano.create({ sede_id: activeSedeId, ...data }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planos", activeSedeId] }); toast({ title: "Plano creado" }); setPlanoForm(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planos", activeSedeId] }); toast({ title: "Plano creado" }); setPlanoForm({ open: false, initial: null }); },
+  });
+  const updatePlano = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.MapaPlano.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["planos", activeSedeId] });
+      toast({ title: "Plano actualizado", description: "Los puntos conservaron su ubicación." });
+      setPlanoForm({ open: false, initial: null });
+    },
   });
   const deletePlano = useMutation({
     mutationFn: async (planoId) => {
@@ -178,6 +187,7 @@ export default function Mapa() {
       qc.invalidateQueries({ queryKey: ["planos", activeSedeId] });
       setActivePlanoId(null);
       toast({ title: "Plano eliminado" });
+      setConfirmPlano(null);
     },
   });
 
@@ -338,8 +348,9 @@ export default function Mapa() {
               activeId={activePlano?.id}
               onSelect={selectPlano}
               canEdit={canManageMapa}
-              onAdd={() => setPlanoForm(true)}
-              onDeleteActive={() => activePlano && deletePlano.mutate(activePlano.id)}
+              onAdd={() => setPlanoForm({ open: true, initial: null })}
+              onEditActive={() => activePlano && setPlanoForm({ open: true, initial: activePlano })}
+              onDeleteActive={() => activePlano && setConfirmPlano(activePlano)}
             />
           )}
 
@@ -393,10 +404,14 @@ export default function Mapa() {
       />
 
       <PlanoManager
-        open={planoForm}
-        onClose={() => setPlanoForm(false)}
+        open={planoForm.open}
+        initial={planoForm.initial}
+        onClose={() => setPlanoForm({ open: false, initial: null })}
         nextOrder={planos.length}
-        onSave={(data) => createPlano.mutate(data)}
+        onSave={(data) => {
+          if (planoForm.initial?.id) return updatePlano.mutateAsync({ id: planoForm.initial.id, data });
+          return createPlano.mutateAsync(data);
+        }}
       />
 
       <PuntoForm
@@ -433,6 +448,27 @@ export default function Mapa() {
               onClick={() => deleteSede.mutate(confirmSede)}
             >
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmPlano} onOpenChange={(open) => !open && setConfirmPlano(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar plano "{confirmPlano?.nombre}"</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán también sus {activePlanoId === confirmPlano?.id ? puntos.length : 0} puntos asociados.
+              Los equipos e impresoras seguirán existiendo en el inventario. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => confirmPlano && deletePlano.mutate(confirmPlano.id)}
+            >
+              Eliminar plano
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

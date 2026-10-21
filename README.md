@@ -14,10 +14,14 @@ arquitectura administrada por ITAC:
 
 ## Estado de la migración
 
-La aplicación compila y cuenta con API, esquema, migración inicial y definición
-de contenedores. La importación de datos históricos se realizará después de
-validar una instancia vacía en ARAPP12. Los archivos reales de exportación no
-deben copiarse al repositorio.
+La aplicación y los datos históricos se encuentran migrados a la infraestructura
+administrada por ITAC en ARAPP12. Los archivos reales de exportación no deben
+copiarse al repositorio.
+
+El dashboard incluye alertas operativas y sincronización directa con OCS cada
+24 horas. La creación automática de equipos descubiertos en OCS permanece
+deshabilitada: los registros nuevos se informan en el log para evitar altas o
+duplicaciones accidentales.
 
 ## Desarrollo
 
@@ -66,3 +70,7 @@ No subir al repositorio:
 - imágenes de planos reales;
 - archivos `.env`;
 - copias de la base de datos.
+
+## Documentación operativa
+
+- [Integración con OCS y alertas](docs/OCS-INTEGRATION.md)

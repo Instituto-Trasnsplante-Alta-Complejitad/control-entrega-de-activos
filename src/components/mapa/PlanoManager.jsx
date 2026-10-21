@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { base44 } from "@/api/base44Client";
 import { toast } from "@/components/ui/use-toast";
-import { Upload, Loader2, FileText } from "lucide-react";
+import { AlertTriangle, Upload, Loader2, FileText } from "lucide-react";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
-export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
+export default function PlanoManager({ open, onClose, onSave, nextOrder, initial = null }) {
   const [nombre, setNombre] = useState("");
   const [orden, setOrden] = useState(0);
   const [file, setFile] = useState(null);
@@ -22,19 +22,39 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
   const [selectedPage, setSelectedPage] = useState(0);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [aspectWarning, setAspectWarning] = useState(false);
+  const objectUrlRef = useRef(null);
+
+  const revokeObjectUrl = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (open) {
-      setNombre("");
-      setOrden(nextOrder || 0);
+      revokeObjectUrl();
+      setNombre(initial?.nombre || "");
+      setOrden(initial?.orden ?? nextOrder ?? 0);
       setFile(null);
-      setPreview("");
+      setPreview(initial?.imagen_url || "");
       setIsPdf(false);
       setPdfDoc(null);
       setPageThumbs([]);
       setSelectedPage(0);
+      setAspectWarning(false);
     }
-  }, [open, nextOrder]);
+  }, [open, nextOrder, initial]);
+
+  useEffect(() => () => revokeObjectUrl(), []);
+
+  const imageSize = (source) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = reject;
+    image.src = source;
+  });
 
   const onFile = async (e) => {
     const f = e.target.files?.[0];
@@ -45,6 +65,7 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
     setPdfDoc(null);
     setPageThumbs([]);
     setSelectedPage(0);
+    revokeObjectUrl();
 
     if (f.type === "application/pdf") {
       setIsPdf(true);
@@ -68,12 +89,27 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
         if (thumbs.length > 0) setSelectedPage(1);
       } catch (err) {
         console.error(err);
+        setFile(null);
+        setIsPdf(false);
+        setPreview(initial?.imagen_url || "");
         toast({ title: "Error al cargar PDF", variant: "destructive" });
       } finally {
         setLoadingPdf(false);
       }
     } else {
-      setPreview(URL.createObjectURL(f));
+      const objectUrl = URL.createObjectURL(f);
+      objectUrlRef.current = objectUrl;
+      setPreview(objectUrl);
+      if (initial?.imagen_url) {
+        try {
+          const [before, after] = await Promise.all([imageSize(initial.imagen_url), imageSize(objectUrl)]);
+          const beforeRatio = before.width / before.height;
+          const afterRatio = after.width / after.height;
+          setAspectWarning(Math.abs(beforeRatio - afterRatio) / beforeRatio > 0.05);
+        } catch {
+          setAspectWarning(false);
+        }
+      }
     }
   };
 
@@ -81,7 +117,7 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
     if (!nombre.trim()) return;
     setUploading(true);
     try {
-      let file_url;
+      let file_url = initial?.imagen_url;
       if (isPdf && pdfDoc && selectedPage) {
         const page = await pdfDoc.getPage(selectedPage);
         const viewport = page.getViewport({ scale: 2.5 });
@@ -99,7 +135,7 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
         file_url = res.file_url;
       }
       if (file_url) {
-        await onSave({ nombre, orden: Number(orden) || 0, imagen_url: file_url });
+        await onSave({ nombre: nombre.trim(), orden: Number(orden) || 0, imagen_url: file_url });
         onClose();
       }
     } catch (err) {
@@ -110,13 +146,14 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
     }
   };
 
-  const canSave = nombre.trim() && (isPdf ? selectedPage : file) && !uploading;
+  const hasUsableImage = file ? (isPdf ? selectedPage > 0 : true) : Boolean(initial?.imagen_url);
+  const canSave = nombre.trim() && hasUsableImage && !uploading;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Nuevo plano</DialogTitle>
+          <DialogTitle>{initial ? "Editar plano" : "Nuevo plano"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
           <div className="flex gap-4">
@@ -131,7 +168,7 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Imagen o PDF del plano</Label>
+            <Label>{initial ? "Reemplazar imagen o PDF (opcional)" : "Imagen o PDF del plano"}</Label>
             <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-slate-50 min-h-32">
               {preview ? (
                 <img src={preview} className="max-h-40 object-contain" />
@@ -146,7 +183,7 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
                 <>
                   <Upload className="w-6 h-6 text-muted-foreground mb-1" />
                   <span className="text-xs text-muted-foreground text-center">
-                    PNG, JPG, WEBP o PDF
+                    {initial ? "Elegí un archivo para reemplazar el actual" : "PNG, JPG, WEBP o PDF"}
                   </span>
                 </>
               )}
@@ -158,6 +195,13 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
               />
             </label>
           </div>
+
+          {aspectWarning && (
+            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <p>La nueva imagen tiene otra proporción. Los puntos conservarán sus coordenadas, pero conviene revisar visualmente su ubicación después de guardar.</p>
+            </div>
+          )}
 
           {isPdf && pageThumbs.length > 0 && (
             <div className="space-y-2">
@@ -188,7 +232,7 @@ export default function PlanoManager({ open, onClose, onSave, nextOrder }) {
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button disabled={!canSave} onClick={save}>
-            {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Subiendo...</> : "Guardar"}
+            {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</> : initial ? "Guardar cambios" : "Guardar"}
           </Button>
         </DialogFooter>
       </DialogContent>
