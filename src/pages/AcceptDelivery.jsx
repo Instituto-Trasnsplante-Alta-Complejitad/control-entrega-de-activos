@@ -8,7 +8,7 @@ import { withAppBasePath } from "@/lib/app-path";
 
 function generateContract(delivery) {
   const dateStr = delivery.delivery_date
-    ? format(new Date(delivery.delivery_date), "d 'de' MMMM 'de' yyyy", { locale: es })
+    ? format(new Date(/^\d{4}-\d{2}-\d{2}$/.test(delivery.delivery_date) ? `${delivery.delivery_date}T00:00:00` : delivery.delivery_date), "d 'de' MMMM 'de' yyyy", { locale: es })
     : "___________________";
 
   return `Buenos Aires, ${dateStr}
@@ -58,6 +58,7 @@ export default function AcceptDelivery() {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     const loadDelivery = async () => {
@@ -71,18 +72,29 @@ export default function AcceptDelivery() {
         return;
       }
 
-      const response = await fetch(
-        withAppBasePath(`/api/public/deliveries/${encodeURIComponent(deliveryId)}/acceptance?token=${encodeURIComponent(token)}`),
-      );
-      const found = response.ok ? await response.json() : null;
+      try {
+        const response = await fetch(
+          withAppBasePath(`/api/public/deliveries/${encodeURIComponent(deliveryId)}/acceptance?token=${encodeURIComponent(token)}`),
+        );
+        const found = await response.json().catch(() => null);
 
-      if (!found) {
-        setError("Entrega no encontrada");
-      } else if (found.status === "aceptado") {
-        setResult("already_accepted");
-        setDelivery(found);
-      } else {
-        setDelivery(found);
+        if (!response.ok || !found) {
+          setError(found?.message || "Entrega no encontrada");
+        } else if (found.status === "aceptado") {
+          setResult("already_accepted");
+          setDelivery(found);
+        } else if (found.status === "firmado") {
+          setResult("already_signed");
+          setDelivery(found);
+        } else if (found.status === "rechazado") {
+          setError("Este contrato fue rechazado y ya no admite aceptación");
+        } else if (found.status === "devuelto") {
+          setError("La entrega asociada a este contrato fue devuelta");
+        } else {
+          setDelivery(found);
+        }
+      } catch {
+        setError("No se pudo consultar la entrega");
       }
       setLoading(false);
     };
@@ -91,15 +103,22 @@ export default function AcceptDelivery() {
 
   const handleAccept = async () => {
     setProcessing(true);
-    const token = new URLSearchParams(window.location.search).get("token");
-    const response = await fetch(withAppBasePath(`/api/public/deliveries/${encodeURIComponent(delivery.id)}/acceptance`), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
-    if (!response.ok) throw new Error("No se pudo registrar la aceptación");
-    setResult("accepted");
-    setProcessing(false);
+    setSubmitError(null);
+    try {
+      const token = new URLSearchParams(window.location.search).get("token");
+      const response = await fetch(withAppBasePath(`/api/public/deliveries/${encodeURIComponent(delivery.id)}/acceptance`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.message || "No se pudo registrar la aceptación");
+      setResult("accepted");
+    } catch (acceptanceError) {
+      setSubmitError(acceptanceError.message);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (loading) {
@@ -117,26 +136,32 @@ export default function AcceptDelivery() {
           <CardContent className="pt-8 pb-8">
             <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
             <h2 className="text-lg font-semibold">{error}</h2>
-            <p className="text-sm text-muted-foreground mt-2">Este enlace puede haber expirado o ser incorrecto.</p>
+            <p className="text-sm text-muted-foreground mt-2">No fue posible abrir el contrato con este enlace.</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (result === "accepted" || result === "already_accepted") {
+  if (result === "accepted" || result === "already_accepted" || result === "already_signed") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-md w-full text-center">
           <CardContent className="pt-8 pb-8">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-foreground">
-              {result === "already_accepted" ? "Contrato ya aceptado" : "¡Contrato aceptado!"}
+              {result === "already_signed"
+                ? "Contrato ya firmado"
+                : result === "already_accepted"
+                  ? "Contrato ya aceptado en línea"
+                  : "¡Contrato aceptado!"}
             </h2>
             <p className="text-sm text-muted-foreground mt-2">
-              {result === "already_accepted"
-                ? "Este contrato ya fue aceptado previamente."
-                : "Tu aceptación quedó registrada. Podés cerrar esta ventana."}
+              {result === "already_signed"
+                ? "La administración registró previamente la firma manual de este contrato."
+                : result === "already_accepted"
+                  ? "Este contrato ya fue aceptado digitalmente."
+                  : "Tu aceptación quedó registrada. Podés cerrar esta ventana."}
             </p>
           </CardContent>
         </Card>
@@ -179,6 +204,12 @@ export default function AcceptDelivery() {
             </div>
           </CardContent>
         </Card>
+
+        {submitError && (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {submitError}. Podés volver a intentarlo.
+          </div>
+        )}
 
         <div className="flex gap-3">
           <Button onClick={handleAccept} disabled={processing} className="flex-1 gap-2" size="lg">

@@ -30,6 +30,7 @@ app.use(express.json({ limit: "2mb" }));
 
 const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
+const administrableDeliveryStatuses = new Set(["pendiente", "firmado", "rechazado", "devuelto"]);
 
 function safeRecord(record) {
   if (!record || typeof record !== "object") return record;
@@ -83,18 +84,40 @@ app.get("/api/public/deliveries/:id/acceptance", asyncRoute(async (req, res) => 
 app.post("/api/public/deliveries/:id/acceptance", asyncRoute(async (req, res) => {
   const token = typeof req.body?.token === "string" ? req.body.token : "";
   if (!token) return res.status(400).json({ message: "Enlace inválido" });
-  const delivery = await prisma.delivery.findFirst({ where: { id: req.params.id, acceptance_token_hash: sha256(token) } });
+  const tokenHash = sha256(token);
+  const delivery = await prisma.delivery.findFirst({ where: { id: req.params.id, acceptance_token_hash: tokenHash } });
   if (!delivery) return res.status(404).json({ message: "Entrega no encontrada" });
-  if (delivery.acceptance_token_expires_at && delivery.acceptance_token_expires_at < new Date()) {
+  const now = new Date();
+  if (delivery.acceptance_token_expires_at && delivery.acceptance_token_expires_at < now) {
     return res.status(410).json({ message: "El enlace venció" });
   }
   if (delivery.status === "aceptado") return res.json(safeRecord(delivery));
   if (delivery.status !== "pendiente") return res.status(409).json({ message: "La entrega ya no está pendiente" });
-  const updated = await prisma.delivery.update({
-    where: { id: delivery.id },
-    data: { status: "aceptado", acceptance_date: new Date().toISOString() },
+
+  const result = await prisma.delivery.updateMany({
+    where: {
+      id: delivery.id,
+      status: "pendiente",
+      acceptance_token_hash: tokenHash,
+      OR: [
+        { acceptance_token_expires_at: null },
+        { acceptance_token_expires_at: { gte: now } },
+      ],
+    },
+    data: { status: "aceptado", acceptance_date: now.toISOString() },
   });
-  res.json(safeRecord(updated));
+
+  const current = await prisma.delivery.findFirst({
+    where: { id: delivery.id, acceptance_token_hash: tokenHash },
+  });
+  if (!current) return res.status(404).json({ message: "Entrega no encontrada" });
+  if (result.count === 1 || current?.status === "aceptado") {
+    return res.json(safeRecord(current));
+  }
+  if (current?.acceptance_token_expires_at && current.acceptance_token_expires_at < new Date()) {
+    return res.status(410).json({ message: "El enlace venció" });
+  }
+  return res.status(409).json({ message: "La entrega ya no está pendiente" });
 }));
 
 app.use("/api", requireIdentity);
@@ -207,6 +230,79 @@ app.post("/api/functions/inventoryAlerts", asyncRoute(async (_req, res) => {
     generatedAt: insights.generatedAt,
     thresholds: insights.thresholds,
     alerts: insights.alerts,
+  });
+}));
+
+app.post("/api/functions/updateDeliveryStatus", requireAdmin, asyncRoute(async (req, res) => {
+  const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
+  const ids = [...new Set(rawIds.filter((id) => typeof id === "string" && id.trim()).map((id) => id.trim()))];
+  const status = typeof req.body?.status === "string" ? req.body.status.trim() : "";
+
+  if (ids.length === 0) return res.status(400).json({ message: "Seleccioná al menos un contrato" });
+  if (ids.length > 500) return res.status(400).json({ message: "Se pueden actualizar hasta 500 contratos por vez" });
+  if (!administrableDeliveryStatuses.has(status)) {
+    return res.status(400).json({ message: "Estado de contrato inválido para una modificación administrativa" });
+  }
+
+  const deliveries = await prisma.delivery.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      status: true,
+      recipient_name: true,
+      equipment_asset: true,
+    },
+  });
+  const changes = deliveries.filter((delivery) => delivery.status !== status && delivery.status !== "aceptado");
+
+  if (changes.length === 0) {
+    return res.json({ requested: ids.length, updated: 0, omitted: ids.length, status });
+  }
+
+  const updatedCount = await prisma.$transaction(async (transaction) => {
+    const auditEntries = [];
+    const now = new Date();
+
+    for (const delivery of changes) {
+      const result = await transaction.delivery.updateMany({
+        where: {
+          id: delivery.id,
+          status: delivery.status,
+          NOT: { status: "aceptado" },
+        },
+        data: { status },
+      });
+      if (result.count !== 1) continue;
+
+      auditEntries.push({
+        usuario_email: req.identity.email,
+        usuario_nombre: req.identity.name,
+        accion: "cambio_estado_contrato",
+        entidad: "Delivery",
+        entidad_id: delivery.id,
+        entidad_label: [delivery.recipient_name, delivery.equipment_asset].filter(Boolean).join(" · "),
+        valor_anterior: delivery.status || "pendiente",
+        valor_nuevo: status,
+        observacion: status === "firmado"
+          ? "Firma manual o histórica registrada desde el panel administrativo"
+          : "Estado modificado desde el panel administrativo",
+        fecha: now.toISOString(),
+        created_by: req.identity.email,
+        created_by_id: req.identity.subject,
+      });
+    }
+
+    if (auditEntries.length > 0) {
+      await transaction.auditLog.createMany({ data: auditEntries });
+    }
+    return auditEntries.length;
+  }, { timeout: 30_000 });
+
+  res.json({
+    requested: ids.length,
+    updated: updatedCount,
+    omitted: ids.length - updatedCount,
+    status,
   });
 }));
 

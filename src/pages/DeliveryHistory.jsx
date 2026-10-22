@@ -11,7 +11,8 @@ import { es } from "date-fns/locale";
 
 const statusBadge = {
   pendiente: { label: "Pendiente", className: "bg-amber-100 text-amber-700 border-amber-200" },
-  aceptado: { label: "Aceptado", className: "bg-green-100 text-green-700 border-green-200" },
+  firmado: { label: "Firmado", className: "bg-green-100 text-green-700 border-green-200" },
+  aceptado: { label: "Aceptado en línea", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   rechazado: { label: "Rechazado", className: "bg-red-100 text-red-700 border-red-200" },
   devuelto: { label: "Devuelto", className: "bg-slate-100 text-slate-700 border-slate-200" },
 };
@@ -50,7 +51,9 @@ export default function DeliveryHistory() {
           <SelectTrigger className="w-44"><SelectValue placeholder="Estado" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="aceptado">Aceptado</SelectItem>
+            <SelectItem value="pendiente">Pendiente</SelectItem>
+            <SelectItem value="firmado">Firmado</SelectItem>
+            <SelectItem value="aceptado">Aceptado en línea</SelectItem>
             <SelectItem value="rechazado">Rechazado</SelectItem>
             <SelectItem value="devuelto">Devuelto</SelectItem>
           </SelectContent>

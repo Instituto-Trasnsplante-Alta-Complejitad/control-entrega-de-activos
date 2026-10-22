@@ -49,6 +49,14 @@ const severityStyles = {
   info: "border-blue-200 bg-blue-50 text-blue-800",
 };
 
+const contractStatusLabels = {
+  pendiente: "Pendiente",
+  firmado: "Firmado",
+  aceptado: "Aceptado en línea",
+  rechazado: "Rechazado",
+  devuelto: "Devuelto",
+};
+
 function formatDate(value) {
   if (!value) return "Sin registro";
   const parsed = new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? `${value}T00:00:00` : value);
@@ -129,7 +137,10 @@ export default function Dashboard() {
     key: name,
     value,
   })).filter((item) => item.value > 0);
-  const topAlerts = data.alerts?.items?.slice(0, 6) || [];
+  const topAlerts = (data.alerts?.items || [])
+    .filter((alert) => alert.severity === "critical" || alert.severity === "warning")
+    .slice(0, 6);
+  const priorityAlertCount = (data.alerts?.counts?.critical || 0) + (data.alerts?.counts?.warning || 0);
   const recentDeliveries = data.deliveries?.recent || [];
   const syncRunning = data.ocsSyncRunning;
 
@@ -250,7 +261,7 @@ export default function Dashboard() {
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg flex items-center gap-2"><BellRing className="w-5 h-5 text-amber-500" /> Alertas prioritarias</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">{data.alerts?.counts?.total || 0} observaciones detectadas</p>
+              <p className="text-sm text-muted-foreground mt-1">{priorityAlertCount} requieren atención</p>
             </div>
             <Button asChild variant="outline" size="sm"><Link to="/alertas">Ver todas</Link></Button>
           </CardHeader>
@@ -258,7 +269,7 @@ export default function Dashboard() {
             {topAlerts.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
                 <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-500" />
-                No hay alertas pendientes.
+                No hay alertas prioritarias.
               </div>
             ) : (
               <div className="space-y-2">
@@ -295,7 +306,9 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground truncate">{delivery.equipment_asset || "Sin activo"} · {delivery.department || "Sin sector"}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <Badge variant="outline" className="text-xs">{delivery.status}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {contractStatusLabels[delivery.status] || delivery.status || "Pendiente"}
+                      </Badge>
                       <p className="text-[11px] text-muted-foreground mt-1">{formatDate(delivery.delivery_date)}</p>
                     </div>
                   </div>

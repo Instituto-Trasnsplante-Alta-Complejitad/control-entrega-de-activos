@@ -1,5 +1,9 @@
 const commonFields = ["id", "created_date", "updated_date", "created_by", "created_by_id", "is_sample"];
 
+const protectedWritableFields = {
+  Delivery: new Set(["status", "acceptance_date"]),
+};
+
 const definitions = {
   AuditLog: ["usuario_email", "usuario_nombre", "accion", "entidad", "entidad_id", "entidad_label", "valor_anterior", "valor_nuevo", "observacion", "fecha"],
   ComponentStock: ["categoria", "tipo", "codigo", "marca", "modelo", "capacidad", "compatibilidad", "cantidad_actual", "cantidad_minima", "proveedor", "ubicacion", "notas", "estado"],
@@ -43,12 +47,18 @@ export function getEntityDefinition(name) {
 
   const fields = definitions[name];
   if (!fields) return null;
+  const protectedFields = protectedWritableFields[name] || new Set();
 
   return {
     name,
     delegateName: delegateNames[name],
     fields: new Set([...commonFields, ...fields]),
-    writableFields: new Set([...fields, "created_by", "created_by_id", "is_sample"]),
+    writableFields: new Set([
+      ...fields.filter((field) => !protectedFields.has(field)),
+      "created_by",
+      "created_by_id",
+      "is_sample",
+    ]),
     readOnly: false,
   };
 }
